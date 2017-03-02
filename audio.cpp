@@ -4,7 +4,24 @@
 #include <iostream>
 
 
-audio::audio(){
+#define PA_SAMPLE_TYPE  paFloat32
+typedef float SAMPLE;
+#define SAMPLE_RATE  (16000)
+#define FRAMES_PER_BUFFER (512)
+
+
+static int external_callback( const void *inputBuffer, void *outputBuffer,
+			   unsigned long framesPerBuffer,
+			   const PaStreamCallbackTimeInfo* timeInfo,
+                            PaStreamCallbackFlags statusFlags,
+			      void *userData ) ;
+
+
+audio::audio() :
+  count(0),
+  pa_init(false), pa_open(false), pa_streamming(false),
+  num_channels(0)
+{
 
   PaError err;
   err = Pa_Initialize();
@@ -16,6 +33,7 @@ audio::audio(){
     goto error;
   };
 
+  pa_init = true;
   
   return;
  error:
@@ -26,6 +44,7 @@ audio::audio(){
 
 
 audio::~audio(){
+  if (!pa_init) return;
   PaError err = Pa_Terminate();
   if( err != paNoError ) {
     std::cout << "PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;    //goto error;
@@ -70,3 +89,78 @@ int audio::list_devices_info(){
   }
   return 0;
 }
+
+
+
+
+void audio::open_device(){
+
+  PaStreamParameters inputParameters;
+  PaStream* stream;
+  inputParameters.device = Pa_GetDefaultInputDevice(); /* default input device */
+  if (inputParameters.device == paNoDevice) {
+    std::cout << "Error: No default input device.\n" << std::endl ;
+    return;
+  }
+  num_channels = 10;
+  inputParameters.channelCount = 10;
+  inputParameters.sampleFormat = PA_SAMPLE_TYPE;
+  inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency;
+  inputParameters.hostApiSpecificStreamInfo = NULL;
+
+
+  PaError err = Pa_OpenStream(
+               &stream,
+               &inputParameters,
+               NULL,                  /* &outputParameters, */
+               SAMPLE_RATE,
+               FRAMES_PER_BUFFER,
+               paClipOff,      /* we won't output out of range samples so don't bother clipping them */
+               external_callback,
+               this );
+  if( err != paNoError ){
+    std::cout << "PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;
+    return ;
+  }
+
+  err = Pa_StartStream( stream );
+  if( err != paNoError ){
+    std::cout << "PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;
+    return ;
+  }
+
+  pa_open = true;
+}
+
+
+
+
+
+int audio::callback( const void *inputBuffer, void *outputBuffer,
+			   unsigned long framesPerBuffer,
+			   const PaStreamCallbackTimeInfo* timeInfo,
+                            PaStreamCallbackFlags statusFlags)
+{
+  const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
+
+  for(int i=0; i<framesPerBuffer; i++ ) {
+    for (int c=0; c<num_channels; c++ ) {
+      float sample = *rptr++;
+    }
+  }
+  count++ ;
+  return paContinue ;
+}
+
+
+
+static int external_callback( const void *inputBuffer, void *outputBuffer,
+			   unsigned long framesPerBuffer,
+			   const PaStreamCallbackTimeInfo* timeInfo,
+                            PaStreamCallbackFlags statusFlags,
+                            void *userData )
+{
+  audio *a = reinterpret_cast<audio*>(userData);
+  a->callback( inputBuffer, outputBuffer, framesPerBuffer, timeInfo, statusFlags ) ;
+}
+
