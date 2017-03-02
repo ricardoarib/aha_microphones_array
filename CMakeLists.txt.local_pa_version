@@ -1,0 +1,45 @@
+
+cmake_minimum_required (VERSION 2.8)
+
+PROJECT( portaudio_test )
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake_scripts)
+
+
+## To use system wide instalation of portaudio:
+##find_package (PortAudio)
+
+## To use a local copy of portaudio:
+## NOTE: The portaudio package by itself compiles using configure/make on Linux and OsX but uses cmake to compile in windows.
+##IF(WIN32 AND MSVC)
+IF(WIN32)
+  add_subdirectory(portaudio)
+##ELSE(WIN32 AND MSVC)
+ELSE(WIN32)
+  include(ExternalProject)
+  ExternalProject_Add(
+    portaudio
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/pa_stable_v19_20140130.tgz
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/portaudio
+    #SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/portaudio
+    #CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/portaudio/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/portaudio
+    #CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/portaudio
+    CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
+    #BUILD_COMMAND ${MAKE}
+    #BUILD_IN_SOURCE 1
+    #INSTALL_DIR ${CMAKE_BINARY_DIR}/portaudio
+    #INSTALL_COMMAND ""
+  )
+  link_directories( ${CMAKE_CURRENT_BINARY_DIR}/portaudio/lib/ )
+  include_directories( ${CMAKE_CURRENT_BINARY_DIR}/portaudio/include )
+##ENDIF(WIN32 AND MSVC)
+ENDIF(WIN32)
+
+
+add_executable(main main.cpp)
+add_dependencies(main portaudio)
+
+#target_link_libraries( main  portaudio )
+target_link_libraries( main libportaudio.so )
+#target_link_libraries( main )
+
