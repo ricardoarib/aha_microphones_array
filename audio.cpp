@@ -1,3 +1,6 @@
+
+
+
 #include "audio.h"
 
 #include "portaudio.h"
@@ -6,8 +9,9 @@
 
 #define PA_SAMPLE_TYPE  paFloat32
 typedef float SAMPLE;
-#define SAMPLE_RATE  (16000)
-#define FRAMES_PER_BUFFER (512)
+//#define SAMPLE_RATE  (16000)
+//#define FRAMES_PER_BUFFER (512)
+#define FRAMES_PER_BUFFER (128)
 
 
 static int external_callback( const void *inputBuffer, void *outputBuffer,
@@ -207,10 +211,14 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
       float sample = *rptr++;
       float sample_abs = (sample<0) ? -sample : sample ;
       if ( levels[c] < sample_abs )
-	levels[c] < sample_abs ;
+	levels[c] = sample_abs ;
     }
   }
-
+  /*  
+  for (int c=0; c<num_channels; c++ ) {
+    levels[c] = 0.0001;
+  }
+  */
   count++ ;
   return paContinue ;
 }
@@ -230,7 +238,7 @@ static int external_callback( const void *inputBuffer, void *outputBuffer,
 
 
 float audio::get_level(int c){
-  if (!levels) return 0.0f ;
-  if (c < 0 | c <= num_channels) return 0.0f ;
+  //if (!levels) return 0.0f ;
+  //if (c < 0 | c <= num_channels) return 0.0f ;
   return levels[c];
 };
