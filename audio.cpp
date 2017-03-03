@@ -20,9 +20,12 @@ static int external_callback( const void *inputBuffer, void *outputBuffer,
 audio::audio() :
   count(0),
   pa_init(false), pa_open(false), pa_streamming(false),
-  num_channels(0)
+  num_channels(0),
+  levels(0)
 {
 
+
+  levels = new float[256];
   PaError err;
   err = Pa_Initialize();
 
@@ -51,7 +54,7 @@ audio::~audio(){
     //printf(  "PortAudio error: %s\n", Pa_GetErrorText( err ) );
     //return 1;
   };
-  
+  delete [] levels;
 };
 
 
@@ -130,6 +133,9 @@ void audio::open_device(){
   }
 
   pa_open = true;
+  for (int c=0;c<num_channels;c++)
+    levels[c] = 0.0f ;
+
 }
 
 
@@ -143,11 +149,20 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
 {
   const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
 
+  /* decay levles */
+  for (int c=0; c<num_channels; c++ ) {
+    levels[c] *= 0.9f ;
+  }
+
   for(int i=0; i<framesPerBuffer; i++ ) {
     for (int c=0; c<num_channels; c++ ) {
       float sample = *rptr++;
+      float sample_abs = (sample<0) ? -sample : sample ;
+      if ( levels[c] < sample_abs )
+	levels[c] < sample_abs ;
     }
   }
+
   count++ ;
   return paContinue ;
 }
@@ -164,3 +179,10 @@ static int external_callback( const void *inputBuffer, void *outputBuffer,
   a->callback( inputBuffer, outputBuffer, framesPerBuffer, timeInfo, statusFlags ) ;
 }
 
+
+
+float audio::get_level(int c){
+  if (!levels) return 0.0f ;
+  if (c < 0 | c <= num_channels) return 0.0f ;
+  return levels[c];
+};
