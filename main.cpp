@@ -7,10 +7,13 @@
 
 int main(int argc, char** argv){
   audio a;
-  //a.list_devices_info();
+  a.list_devices_info();
   a.open_device();
-  int count = 0;
 
+  if (!a.is_streamming())
+    return -1;
+  
+  int count = 0;
   while ( count < 10000 ){
     count = a.get_count();
     std::cout << "\rcount = " << count << "         " ;

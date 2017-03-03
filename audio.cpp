@@ -2,7 +2,7 @@
 
 #include "portaudio.h"
 #include <iostream>
-
+#include <string>
 
 #define PA_SAMPLE_TYPE  paFloat32
 typedef float SAMPLE;
@@ -17,10 +17,18 @@ static int external_callback( const void *inputBuffer, void *outputBuffer,
 			      void *userData ) ;
 
 
+
+bool string_search(const char* a, const char* b ){
+  std::string s1(a);
+  std::string s2(b);
+  return s1.find(s2) != std::string::npos;
+};
+
+
 audio::audio() :
   count(0),
   pa_init(false), pa_open(false), pa_streamming(false),
-  num_channels(0),
+  num_channels(0), sample_rate(1),
   levels(0)
 {
 
@@ -60,7 +68,20 @@ audio::~audio(){
 
 
 int audio::list_devices_info(){
-  
+  PaHostApiIndex numberAPIs = Pa_GetHostApiCount() ;
+  std::cout << "\n" << "Pa_GetHostApiCount returned "<< numberAPIs << std::endl;
+  const PaHostApiInfo * apiInfo ;
+  for ( int i=0; i<numberAPIs; i++){
+    apiInfo = Pa_GetHostApiInfo( i ) ;
+    std::cout << "\n";
+    std::cout << "hostAPI type:\t" << apiInfo->type << "\n";
+    std::cout << "hostAPI:\t" << apiInfo->name << "\n";
+    std::cout << "deviceCount:\t" << apiInfo->deviceCount << "\n";
+    std::cout << "defaultInputDevice:\t" << apiInfo->defaultInputDevice << "\n";
+    std::cout << "defaultOutputDevice:\t" << apiInfo->defaultOutputDevice << "\n";
+  }
+
+
   int numDevices;
   numDevices = Pa_GetDeviceCount();
   if( numDevices < 0 )  {
@@ -70,7 +91,7 @@ int audio::list_devices_info(){
     return -1;
   }
 
-  std::cout << "Pa_CountDevices returned "<< numDevices << std::endl;
+  std::cout << "\n\nPa_CountDevices returned "<< numDevices << std::endl;
 
   const   PaDeviceInfo *deviceInfo;
   for( int i=0; i<numDevices; i++ ) {
@@ -93,22 +114,48 @@ int audio::list_devices_info(){
   return 0;
 }
 
-
+PaDeviceIndex audio::search_device(const char* str){
+  int numDevices = Pa_GetDeviceCount();
+  const   PaDeviceInfo *deviceInfo;
+  for( int i=0; i<numDevices; i++ ) {
+    deviceInfo = Pa_GetDeviceInfo( i ) ;
+    if ( string_search( deviceInfo->name, str) )
+      return i;
+  }  
+  return paNoDevice;
+};
 
 
 void audio::open_device(){
 
   PaStreamParameters inputParameters;
   PaStream* stream;
-  inputParameters.device = Pa_GetDefaultInputDevice(); /* default input device */
+
+  //inputParameters.device = search_device("hw:0,0");
+  inputParameters.device = search_device("STM32");
+
+  std::cout << "\nFound device " << inputParameters.device << std::endl;
+
+  if ( inputParameters.device == paNoDevice ){
+    std::cout << "Error: cannot find device." << std::endl;
+    return;
+  }
+
+  /*
+  inputParameters.device = Pa_GetDefaultInputDevice(); // default input device
   if (inputParameters.device == paNoDevice) {
     std::cout << "Error: No default input device.\n" << std::endl ;
     return;
   }
-  num_channels = 10;
-  inputParameters.channelCount = 10;
+  */
+
+  const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo( inputParameters.device );
+  num_channels = deviceInfo->maxInputChannels;
+  sample_rate =  deviceInfo->defaultSampleRate;
+  
+  inputParameters.channelCount = num_channels;
   inputParameters.sampleFormat = PA_SAMPLE_TYPE;
-  inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency;
+  inputParameters.suggestedLatency = deviceInfo->defaultLowInputLatency;
   inputParameters.hostApiSpecificStreamInfo = NULL;
 
 
@@ -116,7 +163,7 @@ void audio::open_device(){
                &stream,
                &inputParameters,
                NULL,                  /* &outputParameters, */
-               SAMPLE_RATE,
+               sample_rate,
                FRAMES_PER_BUFFER,
                paClipOff,      /* we won't output out of range samples so don't bother clipping them */
                external_callback,
@@ -133,6 +180,7 @@ void audio::open_device(){
   }
 
   pa_open = true;
+  pa_streamming = true;
   for (int c=0;c<num_channels;c++)
     levels[c] = 0.0f ;
 
