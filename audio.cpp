@@ -32,6 +32,7 @@ bool string_search(const char* a, const char* b ){
 audio::audio() :
   count(0),
   pa_init(false), pa_open(false), pa_streamming(false),
+  pa_stream(0),
   num_channels(0), sample_rate(1),
   levels(0)
 {
@@ -133,7 +134,6 @@ PaDeviceIndex audio::search_device(const char* str){
 void audio::open_device(){
 
   PaStreamParameters inputParameters;
-  PaStream* stream;
 
   //inputParameters.device = search_device("hw:0,0");
   inputParameters.device = search_device("STM32");
@@ -164,7 +164,7 @@ void audio::open_device(){
 
 
   PaError err = Pa_OpenStream(
-               &stream,
+               &pa_stream,
                &inputParameters,
                NULL,                  /* &outputParameters, */
                sample_rate,
@@ -177,7 +177,7 @@ void audio::open_device(){
     return ;
   }
 
-  err = Pa_StartStream( stream );
+  err = Pa_StartStream( pa_stream );
   if( err != paNoError ){
     std::cout << "PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;
     return ;
@@ -197,7 +197,7 @@ void audio::open_device(){
 int audio::callback( const void *inputBuffer, void *outputBuffer,
 			   unsigned long framesPerBuffer,
 			   const PaStreamCallbackTimeInfo* timeInfo,
-                            PaStreamCallbackFlags statusFlags)
+                            PaStreamCallbackFlags statusFlags )
 {
   const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
 
@@ -214,11 +214,6 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
 	levels[c] = sample_abs ;
     }
   }
-  /*  
-  for (int c=0; c<num_channels; c++ ) {
-    levels[c] = 0.0001;
-  }
-  */
   count++ ;
   return paContinue ;
 }
@@ -231,14 +226,23 @@ static int external_callback( const void *inputBuffer, void *outputBuffer,
                             PaStreamCallbackFlags statusFlags,
                             void *userData )
 {
-  audio *a = reinterpret_cast<audio*>(userData);
-  a->callback( inputBuffer, outputBuffer, framesPerBuffer, timeInfo, statusFlags ) ;
+  reinterpret_cast<audio*>(userData)->callback( inputBuffer, outputBuffer, framesPerBuffer, timeInfo, statusFlags ) ;
 }
 
 
 
 float audio::get_level(int c){
-  //if (!levels) return 0.0f ;
-  //if (c < 0 | c <= num_channels) return 0.0f ;
+  if (!levels) return 0.0f ;
+  if ( (c < 0) | (c >= num_channels) ) return 0.0f ;
   return levels[c];
 };
+
+
+
+double audio::get_cpu_load(){
+  if ( pa_stream == 0 )
+    return 0.0d;
+  return Pa_GetStreamCpuLoad( pa_stream ) ;
+};
+
+

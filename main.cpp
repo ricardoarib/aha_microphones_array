@@ -39,12 +39,14 @@ int main(int argc, char** argv){
 
   if (!a.is_streamming())
     return -1;
-  std::cout << "count |   vu meters (dBFS) \n" ;
+  std::cout << "cpu %  | count |   vu meters (dBFS) \n" ;
   int count = 0;
+  double cpu;
   while ( count < 10000 ){
     count = a.get_count();
+    cpu = a.get_cpu_load();
     //std::cout << "\rcount = " << count << "         " ;
-    std::cout << "\r" << std::setw(5) << count << " | " ;
+    std::cout << "\r" << std::setprecision(2) << std::setw(6) << cpu *100 << " | " << std::setw(5) << count << " | " ;
     for (int c=0; c < a.get_num_channels(); c++){
       float l = a.get_level(c) ;
       //std::cout.precision(4);

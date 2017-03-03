@@ -30,8 +30,13 @@ class audio{
 	    const PaStreamCallbackTimeInfo* timeInfo,
 		PaStreamCallbackFlags statusFlags);
 
+
+  double get_cpu_load();   /*!< Gets how much CPU is being used by the callback (returns value between 0.0 and 1.0)*/
+
  private:
   bool pa_init, pa_open, pa_streamming;
+  PaStream* pa_stream;
+
   int count;
   int num_channels;
   int sample_rate;
