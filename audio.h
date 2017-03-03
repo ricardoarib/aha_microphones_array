@@ -3,7 +3,7 @@
 
 //! Audio I/O class.
 /*!
-A class that reads and writes to the audio device.
+A class that reads from and writes to an audio device.
  */
 class audio{
  public:
@@ -17,7 +17,12 @@ class audio{
   */
   int list_devices_info();
   PaDeviceIndex search_device(const char* str);
-  void open_device();
+
+  /// \brief Opens the audio device and starts streamming.
+  /// \param devname Optional string to specify the device. If the string is not specified then uses the default device.
+  void start(const char* devname = 0);
+  void open_device( PaDeviceIndex d );
+  void start_stream();
 
   int get_count(){ return count; };
   int get_num_channels(){ return num_channels; };

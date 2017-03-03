@@ -35,14 +35,15 @@ void print_bar(float val){ /*!< Value*/
 int main(int argc, char** argv){
   audio a;
   a.list_devices_info();
-  a.open_device();
+  //a.open_device();
+  a.start("STM32");
 
   if (!a.is_streamming())
     return -1;
   std::cout << "cpu %  | count |   vu meters (dBFS) \n" ;
   int count = 0;
   double cpu;
-  while ( count < 100 ){
+  while ( count < 10000 ){
     count = a.get_count();
     cpu = a.get_cpu_load();
     //std::cout << "\rcount = " << count << "         " ;

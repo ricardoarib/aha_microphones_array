@@ -1,4 +1,4 @@
-
+/*! \file */
 
 
 #include "audio.h"
@@ -150,20 +150,47 @@ PaDeviceIndex audio::search_device(const char* str){
 };
 
 
-void audio::open_device(){
+///  Opens the audio device and starts the streamming.
+///  A string can be given to specify a device. A search for the string is performed and,
+///  if the real device name contains the string, the device is selected.
+///  In no string is specified, then opens the default device.
+void audio::start( const char* devname ){
+  PaDeviceIndex d;
+  if ( devname == 0 ){
+    d = Pa_GetDefaultInputDevice(); // default input device
+    if ( d == paNoDevice ) {
+      std::cout << "Error: No default input device.\n" << std::endl ;
+      return ;
+    }
+  } else {
+    d = search_device( devname ) ;
+    if ( d == paNoDevice ){
+      std::cout << "Error: cannot find device." << std::endl ;
+      return ;
+    }
+    std::cout << "\nFound device " << d << std::endl;
+  }
+
+  open_device( d ) ;
+  start_stream() ;
+
+};
+
+void audio::open_device( PaDeviceIndex d ){
 
   PaStreamParameters inputParameters;
 
   //inputParameters.device = search_device("hw:0,0");
-  inputParameters.device = search_device("STM32");
+  //inputParameters.device = search_device("STM32");
+  inputParameters.device = d ;
 
+  /*
   std::cout << "\nFound device " << inputParameters.device << std::endl;
-
   if ( inputParameters.device == paNoDevice ){
     std::cout << "Error: cannot find device." << std::endl;
     return;
   }
-
+  */
   /*
   inputParameters.device = Pa_GetDefaultInputDevice(); // default input device
   if (inputParameters.device == paNoDevice) {
@@ -198,7 +225,12 @@ void audio::open_device(){
 
   pa_open = true;
 
-  err = Pa_StartStream( pa_stream );
+
+}
+
+
+void audio::start_stream(){
+  PaError err = Pa_StartStream( pa_stream );
   if( err != paNoError ){
     std::cout << "PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;
     return ;
@@ -214,7 +246,6 @@ void audio::open_device(){
 
 
 
-
 int audio::callback( const void *inputBuffer, void *outputBuffer,
 			   unsigned long framesPerBuffer,
 			   const PaStreamCallbackTimeInfo* timeInfo,
@@ -222,7 +253,7 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
 {
   const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
 
-  /* decay levles */
+  /* decay levels */
   for (int c=0; c<num_channels; c++ ) {
     levels[c] *= 0.9f ;
   }
