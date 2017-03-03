@@ -42,7 +42,7 @@ int main(int argc, char** argv){
   std::cout << "cpu %  | count |   vu meters (dBFS) \n" ;
   int count = 0;
   double cpu;
-  while ( count < 10000 ){
+  while ( count < 100 ){
     count = a.get_count();
     cpu = a.get_cpu_load();
     //std::cout << "\rcount = " << count << "         " ;

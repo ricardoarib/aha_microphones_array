@@ -60,14 +60,33 @@ audio::audio() :
 
 
 audio::~audio(){
-  if (!pa_init) return;
-  PaError err = Pa_Terminate();
-  if( err != paNoError ) {
-    std::cout << "PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;    //goto error;
-    //printf(  "PortAudio error: %s\n", Pa_GetErrorText( err ) );
-    //return 1;
+  PaError err ;
+
+  if (pa_streamming){
+    err = Pa_StopStream( pa_stream );
+    if( err != paNoError ) {
+      std::cout << "StopStream: PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;
+    };
   };
+
+
+  if (pa_open){
+    err = Pa_CloseStream( pa_stream );
+    if( err != paNoError ) {
+      std::cout << "CloseStream: PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;
+    };
+  }
+
+
+  if (pa_init) {
+    err = Pa_Terminate();
+    if( err != paNoError ) {
+      std::cout << "Terminate: PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;
+    };
+  }
+
   delete [] levels;
+
 };
 
 
@@ -177,14 +196,16 @@ void audio::open_device(){
     return ;
   }
 
+  pa_open = true;
+
   err = Pa_StartStream( pa_stream );
   if( err != paNoError ){
     std::cout << "PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;
     return ;
   }
 
-  pa_open = true;
   pa_streamming = true;
+
   for (int c=0;c<num_channels;c++)
     levels[c] = 0.0f ;
 
