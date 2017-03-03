@@ -1,9 +1,20 @@
 #include "portaudio.h"
 
+
+//! Audio I/O class.
+/*!
+A class that reads and writes to the audio device.
+ */
 class audio{
  public:
+  /*!
+    constructor
+  */
   audio();
   ~audio();
+  /*!
+   Sarches devices and list their info.
+  */
   int list_devices_info();
   PaDeviceIndex search_device(const char* str);
   void open_device();
@@ -25,4 +36,7 @@ class audio{
   int num_channels;
   int sample_rate;
   float* levels;
+
+  
+
 };

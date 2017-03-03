@@ -1,5 +1,4 @@
 
-
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -7,7 +6,7 @@
 #include "audio.h"
 
 
-void print_bar(float val){
+void print_bar(float val){ /*!< Value*/
   int N =  8; // bar total length
   float max_dB = 0.0f;
   float min_dB = -40.0f;
