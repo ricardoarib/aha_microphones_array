@@ -38,6 +38,18 @@ int main(int argc, char** argv){
   //a.open_device();
   a.start("STM32");
 
+  int num_samples = 1024*4;
+  int num_channels = a.get_num_channels();
+
+  float buf[ num_samples * num_channels ];
+  for (int i =0; i<num_samples * num_channels; i++)
+    buf[i] = 0.0f ;
+  
+  float levels[ num_channels ];
+  /*  for (int c=0; c<num_channels; c++ ) {
+    levels[c] = 0.0f ;
+  }
+  */
   if (!a.is_streamming())
     return -1;
   std::cout << "cpu %  | count |   vu meters (dBFS) \n" ;
@@ -48,6 +60,7 @@ int main(int argc, char** argv){
     cpu = a.get_cpu_load();
     //std::cout << "\rcount = " << count << "         " ;
     std::cout << "\r" << std::setprecision(2) << std::setw(6) << cpu *100 << " | " << std::setw(5) << count << " | " ;
+    /*
     for (int c=0; c < a.get_num_channels(); c++){
       float l = a.get_level(c) ;
       //std::cout.precision(4);
@@ -56,6 +69,41 @@ int main(int argc, char** argv){
       //std::cout << " " ;
     }
     std::cout << std::flush ;
+    */
+
+
+    /* decay levels */
+    for (int c=0; c<num_channels; c++ ) {
+      levels[c] *= 0.09f ;
+    }
+    
+    int read = a.get_data( buf, num_samples * num_channels ) ;
+
+    if ( !read )
+      continue;
+    
+    float* rptr = buf;
+    
+    for(int i=0; i<num_samples; i++ ) {
+      for (int c=0; c<num_channels; c++ ) {
+	float sample = *rptr++;
+	float sample_abs = (sample<0) ? -sample : sample ;
+	if ( levels[c] < sample_abs )
+	  levels[c] = sample_abs ;
+      }
+    }
+
+    //std::cout << "\n";
+    for (int c=0; c<num_channels; c++ ) {
+      print_bar( levels[c] ) ;
+    }
+    //std::cout << std::endl ;
+    //std::cout << std::endl ;
+    std::cout << std::flush ;
+
+
+    
+    
   }
   return 0;
 }

@@ -1,4 +1,9 @@
+#ifndef audio_h
+#define audio_h
+
+
 #include "portaudio.h"
+#include "ringbuffer.h"
 
 
 //! Audio I/O class.
@@ -38,6 +43,8 @@ class audio{
 
   double get_cpu_load();   /*!< Gets how much CPU is being used by the callback (returns value between 0.0 and 1.0)*/
 
+  int get_data(float* d, int sz) ;
+  
  private:
   bool pa_init, pa_open, pa_streamming;
   PaStream* pa_stream;
@@ -47,6 +54,11 @@ class audio{
   int sample_rate;
   float* levels;
 
+  ringbuffer input_ring_buf ;
   
 
 };
+
+
+
+#endif

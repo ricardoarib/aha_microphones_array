@@ -34,7 +34,8 @@ audio::audio() :
   pa_init(false), pa_open(false), pa_streamming(false),
   pa_stream(0),
   num_channels(0), sample_rate(1),
-  levels(0)
+  levels(0),
+  input_ring_buf(1024*256)
 {
 
 
@@ -258,6 +259,9 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
     levels[c] *= 0.9f ;
   }
 
+
+  input_ring_buf.put( (float*) inputBuffer, framesPerBuffer * num_channels );;
+  
   for(int i=0; i<framesPerBuffer; i++ ) {
     for (int c=0; c<num_channels; c++ ) {
       float sample = *rptr++;
@@ -298,3 +302,6 @@ double audio::get_cpu_load(){
 };
 
 
+int audio::get_data(float* d, int sz){
+  return input_ring_buf.get(d,sz);
+};

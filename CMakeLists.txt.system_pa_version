@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake_scr
 find_package (PortAudio)
 
 
-add_executable(main main.cpp audio.cpp)
+add_executable(main main.cpp audio.cpp ringbuffer.cpp pa_ringbuffer.c)
 target_link_libraries( main  portaudio )
 
 
