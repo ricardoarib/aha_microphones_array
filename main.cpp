@@ -2,9 +2,12 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <sndfile.h>
 
 #include "audio.h"
 
+
+#define PI 3.14159265358979
 
 void print_bar(float val){ /*!< Value*/
   int N =  8; // bar total length
@@ -52,10 +55,32 @@ int main(int argc, char** argv){
   */
   if (!a.is_streamming())
     return -1;
+
+
+  SF_INFO info;
+  info.format=SF_FORMAT_WAV | SF_FORMAT_PCM_16 ;
+  //info.format=SF_FORMAT_WAV | SF_FORMAT_FLOAT ;
+  info.channels = 10 ;
+  info.samplerate = a.get_sample_rate() ;
+  const char* outfilename = "foo.wav" ;
+
+
+  
+  SNDFILE* infile =  sf_open(outfilename, SFM_WRITE, &info ) ;
+  if ( not infile ) {
+    std::cout << "Cannot open sound file: " << outfilename << std::endl ;
+    return -1 ;
+  }
+
+  
+  float t = 0 ;
+  float T = 1/a.get_sample_rate();
+  
+  
   std::cout << "cpu %  | count |   vu meters (dBFS) \n" ;
   int count = 0;
   double cpu;
-  while ( count < 10000 ){
+  while ( count < 100 ){
     count = a.get_count();
     cpu = a.get_cpu_load();
     //std::cout << "\rcount = " << count << "         " ;
@@ -99,12 +124,35 @@ int main(int argc, char** argv){
     }
     //std::cout << std::endl ;
     //std::cout << std::endl ;
+    std::cout << " fpb=" << a.get_framesPerBuffer() << std::endl ;
     std::cout << std::flush ;
 
 
+
+    rptr = buf;
+    for(int i=0; i<num_samples; i++ ) {
+      t += T ;
+      for (int c=0; c<num_channels; c++ ) {
+	if (c==1)
+	  *rptr  = sin( 2.0 * PI * 1000.0 * t  ) ;
+	rptr++;
+      }
+    }
+
+
+
+    sf_write_float( infile, buf, num_samples * num_channels ) ;
     
     
   }
+
+
+
+  
+  if ( sf_close( infile ) ) {
+    std::cout << "Error closing sound file." << std::endl ;
+  };
+  
   return 0;
 }
 

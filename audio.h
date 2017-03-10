@@ -31,7 +31,7 @@ class audio{
 
   int get_count(){ return count; };
   int get_num_channels(){ return num_channels; };
-  int get_sample_rate(){ return sample_rate; };
+  double get_sample_rate(){ return sample_rate; };
   int is_streamming(){ return pa_streamming; };
   float get_level(int c);
 
@@ -44,6 +44,7 @@ class audio{
   double get_cpu_load();   /*!< Gets how much CPU is being used by the callback (returns value between 0.0 and 1.0)*/
 
   int get_data(float* d, int sz) ;
+  unsigned long get_framesPerBuffer(){ return _framesPerBuffer ; } ;
   
  private:
   bool pa_init, pa_open, pa_streamming;
@@ -51,12 +52,13 @@ class audio{
 
   int count;
   int num_channels;
-  int sample_rate;
+  double sample_rate;
   float* levels;
 
   ringbuffer input_ring_buf ;
   
-
+  unsigned long _framesPerBuffer;
+  
 };
 
 

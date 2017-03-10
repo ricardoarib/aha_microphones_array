@@ -6,6 +6,9 @@
 #include "portaudio.h"
 #include <iostream>
 #include <string>
+#include <cmath>
+
+#define PI 3.14159265358979
 
 #define PA_SAMPLE_TYPE  paFloat32
 typedef float SAMPLE;
@@ -252,16 +255,28 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
 			   const PaStreamCallbackTimeInfo* timeInfo,
                             PaStreamCallbackFlags statusFlags )
 {
+   _framesPerBuffer = framesPerBuffer;
+  
   const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
+  SAMPLE *rptr2 = (SAMPLE*)inputBuffer;
 
   /* decay levels */
   for (int c=0; c<num_channels; c++ ) {
     levels[c] *= 0.9f ;
   }
 
+  for(int i=0; i<framesPerBuffer; i++ ) {
+    for (int c=0; c<num_channels; c++ ) {
+      if (c==0){
+	*rptr2 = sin( 2 * PI * (double)i/double(framesPerBuffer)    ) ;
+      }
+      rptr2++ ;
+    }
+  }
+  
 
   input_ring_buf.put( (float*) inputBuffer, framesPerBuffer * num_channels );;
-  
+  //_framesPerBuffer = framesPerBuffer * num_channels ;  
   for(int i=0; i<framesPerBuffer; i++ ) {
     for (int c=0; c<num_channels; c++ ) {
       float sample = *rptr++;

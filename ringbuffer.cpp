@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <iostream> // debug only
+
 ringbuffer::ringbuffer(int size) :
   sz_samples(size)
 {
@@ -38,13 +40,18 @@ int ringbuffer::put(float* d, int sz){
   int idx[2] = { 0, 0 } ;
   PaUtil_GetRingBufferWriteRegions( &ringBuffer, sz_to_put, ptr + 0, sizes + 0, ptr + 1, sizes + 1 ) ;
   idx[1] = sizes[0] ;
+
+  std::cerr << "put: sizes[]= " << sizes[0] << "," << sizes[1] ;
+  std::cerr << "  idx[]= " << idx[0] << "," << idx[1] ;
+  std::cerr << std::endl ;
   
   for ( int i = 0; i < 2 && ptr[i] != NULL; ++i ) {
-    memcpy( ptr[i], d+idx[i], sizes[i] );
+    memcpy( ptr[i], d+idx[i], sizes[i]*sizeof(float) );
   }
   PaUtil_AdvanceRingBufferWriteIndex( &ringBuffer, sz_to_put ) ;
   
   return sz_to_put ;
+  
 };
 
 
@@ -62,10 +69,15 @@ int ringbuffer::get(float* d, int sz){
   int idx[2] = { 0, 0 } ;
   ring_buffer_size_t elementsRead = PaUtil_GetRingBufferReadRegions( &ringBuffer, sz_to_get, ptr + 0, sizes + 0, ptr + 1, sizes + 1 ) ;
   idx[1] = sizes[0] ;
+
+  std::cerr << "get: sizes[]= " << sizes[0] << "," << sizes[1] ;
+  std::cerr << "  idx[]= " << idx[0] << "," << idx[1] ;
+  std::cerr << std::endl ;
   
+
   if ( elementsRead )  {
     for ( int i = 0; i < 2 && ptr[i] != NULL; ++i ) {
-      memcpy( d+idx[i], ptr[i], sizes[i] );
+      memcpy( d+idx[i], ptr[i], sizes[i]*sizeof(float) );
     }
     PaUtil_AdvanceRingBufferReadIndex( &ringBuffer, elementsRead ) ;
   }
