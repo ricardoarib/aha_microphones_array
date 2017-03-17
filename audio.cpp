@@ -6,7 +6,7 @@
 #include "portaudio.h"
 #include <iostream>
 #include <string>
-#include <cmath>
+//#include <cmath>
 
 #define PI 3.14159265358979
 
@@ -258,13 +258,14 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
    _framesPerBuffer = framesPerBuffer;
   
   const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
-  SAMPLE *rptr2 = (SAMPLE*)inputBuffer;
+  //  SAMPLE *rptr2 = (SAMPLE*)inputBuffer;
 
   /* decay levels */
   for (int c=0; c<num_channels; c++ ) {
     levels[c] *= 0.9f ;
   }
 
+  /*
   for(int i=0; i<framesPerBuffer; i++ ) {
     for (int c=0; c<num_channels; c++ ) {
       if (c==0){
@@ -273,7 +274,7 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
       rptr2++ ;
     }
   }
-  
+  */
 
   input_ring_buf.put( (float*) inputBuffer, framesPerBuffer * num_channels );;
   //_framesPerBuffer = framesPerBuffer * num_channels ;  

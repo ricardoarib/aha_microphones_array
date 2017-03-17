@@ -80,7 +80,7 @@ int main(int argc, char** argv){
   std::cout << "cpu %  | count |   vu meters (dBFS) \n" ;
   int count = 0;
   double cpu;
-  while ( count < 100 ){
+  while ( count < 1000 ){
     count = a.get_count();
     cpu = a.get_cpu_load();
     //std::cout << "\rcount = " << count << "         " ;
@@ -128,7 +128,7 @@ int main(int argc, char** argv){
     std::cout << std::flush ;
 
 
-
+    /*
     rptr = buf;
     for(int i=0; i<num_samples; i++ ) {
       t += T ;
@@ -138,7 +138,7 @@ int main(int argc, char** argv){
 	rptr++;
       }
     }
-
+    */
 
 
     sf_write_float( infile, buf, num_samples * num_channels ) ;

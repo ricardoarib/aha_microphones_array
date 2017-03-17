@@ -41,10 +41,6 @@ int ringbuffer::put(float* d, int sz){
   PaUtil_GetRingBufferWriteRegions( &ringBuffer, sz_to_put, ptr + 0, sizes + 0, ptr + 1, sizes + 1 ) ;
   idx[1] = sizes[0] ;
 
-  std::cerr << "put: sizes[]= " << sizes[0] << "," << sizes[1] ;
-  std::cerr << "  idx[]= " << idx[0] << "," << idx[1] ;
-  std::cerr << std::endl ;
-  
   for ( int i = 0; i < 2 && ptr[i] != NULL; ++i ) {
     memcpy( ptr[i], d+idx[i], sizes[i]*sizeof(float) );
   }
@@ -69,11 +65,6 @@ int ringbuffer::get(float* d, int sz){
   int idx[2] = { 0, 0 } ;
   ring_buffer_size_t elementsRead = PaUtil_GetRingBufferReadRegions( &ringBuffer, sz_to_get, ptr + 0, sizes + 0, ptr + 1, sizes + 1 ) ;
   idx[1] = sizes[0] ;
-
-  std::cerr << "get: sizes[]= " << sizes[0] << "," << sizes[1] ;
-  std::cerr << "  idx[]= " << idx[0] << "," << idx[1] ;
-  std::cerr << std::endl ;
-  
 
   if ( elementsRead )  {
     for ( int i = 0; i < 2 && ptr[i] != NULL; ++i ) {
