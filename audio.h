@@ -4,7 +4,7 @@
 
 #include "portaudio.h"
 #include "ringbuffer.h"
-
+#include "audio_proc.h"
 
 //! Audio I/O class.
 /*!
@@ -45,6 +45,8 @@ class audio{
 
   int get_data(float* d, int sz) ;
   unsigned long get_framesPerBuffer(){ return _framesPerBuffer ; } ;
+
+  void set_audio_proc(audio_proc* audiop){ ap = audiop } ;
   
  private:
   bool pa_init, pa_open, pa_streamming;
@@ -58,6 +60,8 @@ class audio{
   ringbuffer input_ring_buf ;
   
   unsigned long _framesPerBuffer;
+
+  audio_proc* ap;
   
 };
 

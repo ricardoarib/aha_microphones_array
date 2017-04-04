@@ -38,7 +38,8 @@ audio::audio() :
   pa_stream(0),
   num_channels(0), sample_rate(1),
   levels(0),
-  input_ring_buf(1024*256)
+  input_ring_buf(1024*256),
+  ap(0)
 {
 
 
@@ -313,7 +314,7 @@ float audio::get_level(int c){
 
 double audio::get_cpu_load(){
   if ( pa_stream == 0 )
-    return 0.0d;
+    return 0.0;
   return Pa_GetStreamCpuLoad( pa_stream ) ;
 };
 
