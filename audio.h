@@ -47,8 +47,8 @@ class audio{
   int get_data(float* d, int sz) ;
   unsigned long get_framesPerBuffer(){ return _framesPerBuffer ; } ;
 
-  void set_audio_proc(audio_proc* audiop){ ap = audiop ; } ;
-
+  void set_audio_proc(audio_proc* audiop, int buf_length = 1024 ){ ap = audiop ; samples_per_call = buf_length ; } ;
+  void set_samples_per_call( int val ){ samples_per_call = val;  };
 
   
  private:
@@ -77,6 +77,7 @@ class audio{
   pthread_t proc_thread_id;
   bool stop_proc_thread;
   int callback_thread_sleep_time_us;
+  int samples_per_call;
 
 };
 

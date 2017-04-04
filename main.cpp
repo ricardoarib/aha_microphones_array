@@ -5,6 +5,7 @@
 #include <sndfile.h>
 
 #include "audio.h"
+#include "process.h"
 
 
 #define PI 3.14159265358979
@@ -40,6 +41,10 @@ int main(int argc, char** argv){
   a.list_devices_info();
   //a.open_device();
   a.start("STM32");
+
+  process p;
+  a.set_audio_proc(&p) ;
+
 
   int num_samples = 1024*4;
   int num_channels = a.get_num_channels();

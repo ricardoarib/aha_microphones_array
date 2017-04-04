@@ -342,10 +342,10 @@ void* audio::callback_thread_helper(void * context){
   return ((audio *)context)->callback_thread();
 };
 
-void* audio::callback_thread(){
-  while (!stop_proc_thread) {
-    if (ap){
-      ap->callback();
+void* audio::callback_thread() {
+  while ( !stop_proc_thread ) {
+    if ( ap ) {
+      ap->callback( NULL, num_channels, samples_per_call ) ;
     }
     static int n = 0 ;
     std::cout << "audio::callback_thread()  count = " << n++ << std::endl ;
@@ -354,22 +354,22 @@ void* audio::callback_thread(){
   std::cout << "Waiting 1 seconds to exit audio::callback_thread() ......" <<  std::flush ;
   sleep(1);
   std::cout << "Exiting audio::callback_thread() now!!" <<  std::endl ;
-  pthread_exit(NULL);
+  pthread_exit( NULL ) ;
   return 0;
 };
 
-void audio::start_callback_thread(){
+void audio::start_callback_thread() {
   stop_proc_thread = false ;
   callback_thread_sleep_time_us = 1000 ;
   pthread_create( &proc_thread_id, NULL, callback_thread_helper, (void*)this ) ;
 };
 
 
-void audio::stop_callback_thread(){
+void audio::stop_callback_thread() {
   stop_proc_thread = true ;
   void* status;
   std::cout << "audio::stop_callback_thread() ask thread to stop and wait. " << std::endl ;
-  pthread_join(proc_thread_id, &status);
+  pthread_join( proc_thread_id, &status ) ;
   std::cout << "audio::stop_callback_thread() finished!" << std::endl ;
 };
 

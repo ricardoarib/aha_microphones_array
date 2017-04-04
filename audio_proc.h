@@ -4,7 +4,7 @@
 
 class audio_proc{
  public:
-  virtual void callback() = 0;
+  virtual void callback( float* buf, int Nch, int Nsamples ) = 0;
 };
 
 
