@@ -4,16 +4,18 @@ cmake_minimum_required (VERSION 2.8)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake_scripts)
 
 find_package (PortAudio)
+include_directories(${PORTAUDIO_INCLUDE_DIRS})
+
+
 #find_package (SndFile)
 find_package (LibSndFile)
-
+include_directories(${LIBSNDFILE_INCLUDE_DIRS})
 
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
-add_executable(main main.cpp audio.cpp ringbuffer.cpp pa_ringbuffer.c)
-target_link_libraries( main  portaudio sndfile)
-
+add_executable(main main.cpp audio.cpp ringbuffer.cpp pa_ringbuffer.c process.cpp)
+target_link_libraries( main  ${PORTAUDIO_LIBRARIES} ${LIBSNDFILE_LIBRARIES})
 
 
 # add a target to generate API documentation with Doxygen
