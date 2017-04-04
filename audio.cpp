@@ -7,6 +7,8 @@
 #include <iostream>
 #include <string>
 //#include <cmath>
+#include <unistd.h>
+
 
 #define PI 3.14159265358979
 
@@ -39,7 +41,9 @@ audio::audio() :
   num_channels(0), sample_rate(1),
   levels(0),
   input_ring_buf(1024*256),
-  ap(0)
+  ap(0),
+  stop_proc_thread(false),
+  callback_thread_sleep_time_us(1000)
 {
 
 
@@ -55,6 +59,9 @@ audio::audio() :
   };
 
   pa_init = true;
+
+  start_callback_thread();
+
   
   return;
  error:
@@ -65,6 +72,9 @@ audio::audio() :
 
 
 audio::~audio(){
+
+  stop_callback_thread() ;
+
   PaError err ;
 
   if (pa_streamming){
@@ -91,7 +101,6 @@ audio::~audio(){
   }
 
   delete [] levels;
-
 };
 
 
@@ -322,3 +331,46 @@ double audio::get_cpu_load(){
 int audio::get_data(float* d, int sz){
   return input_ring_buf.get(d,sz);
 };
+
+
+
+/////////////////////////////////////////////////////////////////////////
+////////////////////// callback_thread //////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+void* audio::callback_thread_helper(void * context){
+  return ((audio *)context)->callback_thread();
+};
+
+void* audio::callback_thread(){
+  while (!stop_proc_thread) {
+    if (ap){
+      ap->callback();
+    }
+    static int n = 0 ;
+    std::cout << "audio::callback_thread()  count = " << n++ << std::endl ;
+    usleep( callback_thread_sleep_time_us ) ;
+  }
+  std::cout << "Waiting 1 seconds to exit audio::callback_thread() ......" <<  std::flush ;
+  sleep(1);
+  std::cout << "Exiting audio::callback_thread() now!!" <<  std::endl ;
+  pthread_exit(NULL);
+  return 0;
+};
+
+void audio::start_callback_thread(){
+  stop_proc_thread = false ;
+  callback_thread_sleep_time_us = 1000 ;
+  pthread_create( &proc_thread_id, NULL, callback_thread_helper, (void*)this ) ;
+};
+
+
+void audio::stop_callback_thread(){
+  stop_proc_thread = true ;
+  void* status;
+  std::cout << "audio::stop_callback_thread() ask thread to stop and wait. " << std::endl ;
+  pthread_join(proc_thread_id, &status);
+  std::cout << "audio::stop_callback_thread() finished!" << std::endl ;
+};
+
+
