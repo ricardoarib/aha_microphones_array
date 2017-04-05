@@ -79,3 +79,6 @@ int ringbuffer::get(float* d, int sz){
 
 
 
+int ringbuffer::available(){
+  return  PaUtil_GetRingBufferReadAvailable( &ringBuffer ) ;
+}

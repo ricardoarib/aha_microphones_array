@@ -9,6 +9,7 @@ class ringbuffer{
   ~ringbuffer();
   int put(float* d, int sz);
   int get(float* d, int sz);
+  int available();
 
  private:
   float* data;

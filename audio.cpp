@@ -30,20 +30,22 @@ static int external_callback( const void *inputBuffer, void *outputBuffer,
 bool string_search(const char* a, const char* b ){
   std::string s1(a);
   std::string s2(b);
-  return s1.find(s2) != std::string::npos;
+  //return s1.find(s2) != std::string::npos ;
+  return s1.find(s2) == 0 ;
 };
 
 
 audio::audio() :
-  count(0),
-  pa_init(false), pa_open(false), pa_streamming(false),
+  count( 0 ),
+  pa_init( false ), pa_open( false ), pa_streamming( false ),
   pa_stream(0),
-  num_channels(0), sample_rate(1),
-  levels(0),
-  input_ring_buf(1024*256),
-  ap(0),
-  stop_proc_thread(false),
-  callback_thread_sleep_time_us(1000)
+  num_channels( 0 ), sample_rate( 1 ),
+  levels( 0 ),
+  input_ring_buf( 1024*256 ),
+  ap( 0 ),
+  stop_proc_thread( false ),
+  thread_running( false ),
+  callback_thread_sleep_time_us( 1000 )
 {
 
 
@@ -60,9 +62,6 @@ audio::audio() :
 
   pa_init = true;
 
-  start_callback_thread();
-
-  
   return;
  error:
 
@@ -164,33 +163,36 @@ PaDeviceIndex audio::search_device(const char* str){
 };
 
 
+void audio::start( ){
+  start_callback_thread();
+  start_stream() ;
+}
+
 ///  Opens the audio device and starts the streamming.
 ///  A string can be given to specify a device. A search for the string is performed and,
 ///  if the real device name contains the string, the device is selected.
 ///  In no string is specified, then opens the default device.
-void audio::start( const char* devname ){
+int audio::open_device( const char* devname ){
   PaDeviceIndex d;
   if ( devname == 0 ){
     d = Pa_GetDefaultInputDevice(); // default input device
     if ( d == paNoDevice ) {
       std::cout << "Error: No default input device.\n" << std::endl ;
-      return ;
+      return -1;
     }
   } else {
     d = search_device( devname ) ;
     if ( d == paNoDevice ){
       std::cout << "Error: cannot find device." << std::endl ;
-      return ;
+      return -1;
     }
     std::cout << "\nFound device " << d << std::endl;
   }
 
-  open_device( d ) ;
-  start_stream() ;
-
+  return open_device( d ) ;
 };
 
-void audio::open_device( PaDeviceIndex d ){
+int audio::open_device( PaDeviceIndex d ){
 
   PaStreamParameters inputParameters;
 
@@ -216,7 +218,7 @@ void audio::open_device( PaDeviceIndex d ){
   const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo( inputParameters.device );
   num_channels = deviceInfo->maxInputChannels;
   sample_rate =  deviceInfo->defaultSampleRate;
-  
+
   inputParameters.channelCount = num_channels;
   inputParameters.sampleFormat = PA_SAMPLE_TYPE;
   inputParameters.suggestedLatency = deviceInfo->defaultLowInputLatency;
@@ -234,12 +236,12 @@ void audio::open_device( PaDeviceIndex d ){
                this );
   if( err != paNoError ){
     std::cout << "PortAudio error: " << Pa_GetErrorText( err ) << std::endl ;
-    return ;
+    return -1;
   }
 
   pa_open = true;
 
-
+  return 0;
 }
 
 
@@ -335,25 +337,49 @@ int audio::get_data(float* d, int sz){
 
 
 /////////////////////////////////////////////////////////////////////////
-////////////////////// callback_thread //////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
+////////////////////// callback_thread //////////////////////////////////
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+//vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+
+void audio::set_audio_proc(audio_proc* audiop, int buf_length ) {
+  ap = audiop ;
+  samples_per_call = buf_length ;
+} ;
+
 
 void* audio::callback_thread_helper(void * context){
   return ((audio *)context)->callback_thread();
 };
 
 void* audio::callback_thread() {
-  while ( !stop_proc_thread ) {
-    if ( ap ) {
-      ap->callback( NULL, num_channels, samples_per_call ) ;
-    }
-    static int n = 0 ;
-    std::cout << "audio::callback_thread()  count = " << n++ << std::endl ;
-    usleep( callback_thread_sleep_time_us ) ;
+  if (ap) {
+    ap->set_sample_rate( sample_rate ) ;
+    ap->set_channels( num_channels ) ;
+    ap->pre_start();
   }
-  std::cout << "Waiting 1 seconds to exit audio::callback_thread() ......" <<  std::flush ;
-  sleep(1);
-  std::cout << "Exiting audio::callback_thread() now!!" <<  std::endl ;
+
+  float buf[ samples_per_call * num_channels ];
+
+  while ( !stop_proc_thread ) {
+
+    if ( ap ) {
+
+      while ( input_ring_buf.available() >= ( samples_per_call * num_channels ) ) {
+	input_ring_buf.get( buf, samples_per_call * num_channels ) ;
+	ap->callback( buf, num_channels, samples_per_call ) ;
+      }
+
+    }
+
+    usleep( callback_thread_sleep_time_us ) ;
+
+  }
+
+
+  if (ap)
+    ap->post_stop();
+
   pthread_exit( NULL ) ;
   return 0;
 };
@@ -361,16 +387,22 @@ void* audio::callback_thread() {
 void audio::start_callback_thread() {
   stop_proc_thread = false ;
   callback_thread_sleep_time_us = 1000 ;
-  pthread_create( &proc_thread_id, NULL, callback_thread_helper, (void*)this ) ;
+  if ( ! pthread_create( &proc_thread_id, NULL, callback_thread_helper, (void*)this ) )
+    thread_running = true ;
 };
 
 
 void audio::stop_callback_thread() {
+  if (!thread_running)
+    return ;
   stop_proc_thread = true ;
   void* status;
-  std::cout << "audio::stop_callback_thread() ask thread to stop and wait. " << std::endl ;
   pthread_join( proc_thread_id, &status ) ;
-  std::cout << "audio::stop_callback_thread() finished!" << std::endl ;
 };
 
 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+////////////////////// callback_thread //////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////

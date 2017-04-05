@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <cmath>
 #include <sndfile.h>
+#include <unistd.h>
 
 #include "audio.h"
 #include "process.h"
@@ -37,13 +38,24 @@ void print_bar(float val){ /*!< Value*/
 
 
 int main(int argc, char** argv){
+  process p;
   audio a;
   a.list_devices_info();
   //a.open_device();
-  a.start("STM32");
 
-  process p;
+
+  if ( a.open_device("STM32") ) {
+  //if ( a.open_device("default") ) {
+  //if ( a.open_device("HDA") ) {
+    std::cout << "ERROR: Cannot open audio device." << std::endl ;
+    return 1 ;
+  }
+
   a.set_audio_proc(&p) ;
+
+  a.start() ;
+
+
 
 
   int num_samples = 1024*4;
@@ -77,7 +89,7 @@ int main(int argc, char** argv){
     return -1 ;
   }
 
-  
+
   float t = 0 ;
   float T = 1/a.get_sample_rate();
   
@@ -85,7 +97,11 @@ int main(int argc, char** argv){
   std::cout << "cpu %  | count |   vu meters (dBFS) \n" ;
   int count = 0;
   double cpu;
-  while ( count < 1000 ){
+  while ( count < 3 ){
+    sleep(1);
+    count++;
+    continue ;
+
     count = a.get_count();
     cpu = a.get_cpu_load();
     //std::cout << "\rcount = " << count << "         " ;

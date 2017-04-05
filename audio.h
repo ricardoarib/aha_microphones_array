@@ -26,8 +26,9 @@ class audio{
 
   /// \brief Opens the audio device and starts streamming.
   /// \param devname Optional string to specify the device. If the string is not specified then uses the default device.
-  void start(const char* devname = 0);
-  void open_device( PaDeviceIndex d );
+  void start();
+  int  open_device( const char* devname = 0 );
+  int  open_device( PaDeviceIndex d );
   void start_stream();
 
   int get_count(){ return count; };
@@ -47,7 +48,7 @@ class audio{
   int get_data(float* d, int sz) ;
   unsigned long get_framesPerBuffer(){ return _framesPerBuffer ; } ;
 
-  void set_audio_proc(audio_proc* audiop, int buf_length = 1024 ){ ap = audiop ; samples_per_call = buf_length ; } ;
+  void set_audio_proc(audio_proc* audiop, int buf_length = 1024 ) ; 
   void set_samples_per_call( int val ){ samples_per_call = val;  };
 
   
@@ -76,6 +77,7 @@ class audio{
 
   pthread_t proc_thread_id;
   bool stop_proc_thread;
+  bool thread_running;
   int callback_thread_sleep_time_us;
   int samples_per_call;
 
