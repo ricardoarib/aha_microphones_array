@@ -63,7 +63,7 @@ int main(int argc, char** argv){
 
     //std::cout << "\n";
     for (int c=0; c<num_channels; c++ ) {
-      print_vertical_bar( a.get_level(c) ) ;
+      print_vertical_bar_dB( a.get_level(c) ) ;
     }
     for (int c=0; c<num_channels; c++ ) {
       //print_bar( levels[c] ) ;
@@ -77,8 +77,9 @@ int main(int argc, char** argv){
     /*
     static float phase = 0;
     float val = 0.5 + 0.5 * sin(phase) ;
-    phase += .01;
-    print_horizontal_bar( val, 30 ) ;
+    phase += .1;
+    //print_horizontal_bar( val, 30 ) ;
+    print_arrow( 360 * val ) ;
     */
 
 
