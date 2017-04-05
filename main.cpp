@@ -7,63 +7,9 @@
 
 #include "audio.h"
 #include "process.h"
-
+#include "ascii_meters.h"
 
 #define PI 3.14159265358979
-
-void print_bar(float val, float& max, int& cnt){ /*!< Value*/
-  #define START_CNT 25
-  if ( val >= max ) {
-    max = val ;
-    cnt = START_CNT ;
-  } else {
-    cnt-- ;
-  }
-
-  if ( cnt <= 0 ){
-    max = val ;
-    cnt = START_CNT ;
-  }
-
-  int N =  8; // bar total length
-  float max_dB = 0.0f;
-  float min_dB = -40.0f;
-  float val_dB = 20*log10(val) ;
-  float val_max_dB = 20*log10(max) ;
-
-  //int n = N+val_log*4*N ;
-  int n     = ( val_dB     - min_dB)/(max_dB-min_dB) * N;
-  int n_max = ( val_max_dB - min_dB)/(max_dB-min_dB) * N;
-
-  //std::cout.precision(0);
-  std::cout << std::setw(5) << std::setprecision(1) ;
-  //std::cout << std::fixed << " " << val_dB << "dBFS" ;
-  std::cout << std::fixed << val_dB ;
-
-  if ( n > N )
-    n = N;
-  if ( n < 0 )
-    n = 0;
-
-  if ( n_max > N )
-    n_max = N;
-  if ( n_max < 0 )
-    n_max = 0;
-  /*
-  for (int i=0; i< n; i++)
-    std::cout << '#';
-  for (int i=n; i< N; i++)
-    std::cout << ' ';
-  */
-  for (int i=0; i< N; i++) {
-    if ( i == n_max )
-      std::cout << '!';
-    else if ( i <= n )
-      std::cout << '#';
-    else
-      std::cout << ' ';
-  }
-};
 
 
 
@@ -117,10 +63,25 @@ int main(int argc, char** argv){
 
     //std::cout << "\n";
     for (int c=0; c<num_channels; c++ ) {
-      //print_bar( levels[c] ) ;
-      print_bar( a.get_level(c), levels_max[c], levels_counts[c] ) ;
+      print_vertical_bar( a.get_level(c) ) ;
     }
-    //std::cout << std::endl ;
+    for (int c=0; c<num_channels; c++ ) {
+      //print_bar( levels[c] ) ;
+      //print_bar( a.get_level(c), levels_max[c], levels_counts[c] ) ;
+      print_db( a.get_level(c) ) ;
+      //print_vertical_bar( a.get_level(c) ) ;
+      //print_horizontal_bar( a.get_level(c) ) ;
+      print_horizontal_bar( a.get_level(c), 3 ) ;
+    }
+
+    /*
+    static float phase = 0;
+    float val = 0.5 + 0.5 * sin(phase) ;
+    phase += .01;
+    print_horizontal_bar( val, 30 ) ;
+    */
+
+
     //std::cout << std::endl ;
     //std::cout << " fpb=" << a.get_framesPerBuffer() << std::endl ;
     std::cout << " fpb=" << a.get_framesPerBuffer() ;
@@ -131,6 +92,7 @@ int main(int argc, char** argv){
 
   }
 
+  std::cout << std::endl ;
 
   return 0;
 }
