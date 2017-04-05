@@ -42,6 +42,7 @@ audio::audio() :
   num_channels( 0 ), sample_rate( 1 ),
   levels( 0 ),
   input_ring_buf( 1024*256 ),
+  _framesPerBuffer( 0 ),
   ap( 0 ),
   stop_proc_thread( false ),
   thread_running( false ),
