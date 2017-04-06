@@ -118,17 +118,20 @@ void print_horizontal_bar( float val, int wide ){ /*!< Value*/
 
   //float nf    = ( val_dB     - min_dB)/(max_dB-min_dB) * (float)(N * wide) ;
 
-  float nf = val * (float)(N * wide) ;
+  float nf = val * (float)(N * wide ) ;
 
-  if ( nf > N*wide )
-    nf = N*wide;
+  //if ( nf > N*wide )
+  //  nf = N*wide;
   //if ( nf < 0 )
   //  nf = 0;
 
   int n_big = nf / N ;
   int n_small =   nf - n_big * N ;
+  if ( n_small >= N  )
+    n_small = N-1 ;
 
-  //std::cout << "\r" << "n_big = " << n_big << "   n_small = " << n_small << "  ";
+
+  //std::cout << "\r" << "nf=" << nf <<  "   n_big = " << n_big << "   n_small = " << n_small << "  " << std::flush ;
 
   for (int i=0; i<wide; i++){
     if ( i < n_big )
@@ -137,6 +140,7 @@ void print_horizontal_bar( float val, int wide ){ /*!< Value*/
       std::cout << bars[ n_small ] ;
     else
       std::cout << ' ' ;
+    //std::cout << std::flush ;
   }
 
   //std::cout << std::endl ;
@@ -175,3 +179,42 @@ void print_arrow( float val ){ /*!< Value*/
 
 };
 
+
+void print_needle( float val, int N ) { /*!< Value*/
+
+  int n  = val * N;
+
+  /*
+  if ( n > N )
+    n = N;
+  if ( n < 0 )
+    n = 0;
+  */
+
+  /*
+  for (int i=0; i< N; i++) {
+    if ( i == n )
+      std::cout << '|';
+    else
+      std::cout << ' ';
+  }
+  */
+
+  for ( int i=0; i< N; i++ ) {
+    if ( i == n )
+      std::cout << "\u2503" ; // "┃"
+    else if ( i == 0 )
+      if ( n < 0 )
+	std::cout << "<" ;
+      else
+	std::cout << "\u251C" ; // "├"
+    else if ( i == N-1 )
+      if ( n >= N )
+	std::cout << ">" ;
+      else
+	std::cout << "\u2524" ; // "┤"
+    else
+      std::cout << "\u2500" ; // "─"
+  }
+
+};

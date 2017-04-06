@@ -74,13 +74,14 @@ int main(int argc, char** argv){
       print_horizontal_bar( a.get_level(c), 3 ) ;
     }
 
-    /*
+
     static float phase = 0;
-    float val = 0.5 + 0.5 * sin(phase) ;
-    phase += .1;
-    //print_horizontal_bar( val, 30 ) ;
-    print_arrow( 360 * val ) ;
-    */
+    float val = 0.5 + 0.6 * sin(phase) ;
+    phase += .05;
+    print_horizontal_bar( val, 3 ) ;
+    //print_vertical_bar( val ) ;
+    //print_arrow( 360 * val ) ;
+    print_needle( val, 20 ) ;
 
 
     //std::cout << std::endl ;

@@ -11,5 +11,6 @@ void print_horizontal_bar( float val, int wide = 1 ) ;
 void print_horizontal_bar_dB( float val, int wide = 1 ) ;
 
 void print_arrow( float val ) ;
+void print_needle( float val, int N ) ;
 
 #endif
