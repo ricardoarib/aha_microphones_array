@@ -14,7 +14,7 @@ include_directories(${LIBSNDFILE_INCLUDE_DIRS})
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
-add_executable( main main.cpp audio.cpp ringbuffer.cpp pa_ringbuffer.c process.cpp ascii_meters.cpp )
+add_executable( main main.cpp audio.cpp ringbuffer.cpp pa_ringbuffer.c process.cpp ascii_meters.cpp user_interface.cpp )
 target_link_libraries( main  ${PORTAUDIO_LIBRARIES} ${LIBSNDFILE_LIBRARIES} )
 
 
