@@ -105,7 +105,7 @@ audio::~audio(){
 
 
 
-int audio::list_devices_info(){
+int audio::list_devices_info( bool show_latencies ){
   PaHostApiIndex numberAPIs = Pa_GetHostApiCount() ;
   std::cout << "\n" << "Pa_GetHostApiCount returned "<< numberAPIs << std::endl;
   const PaHostApiInfo * apiInfo ;
@@ -142,10 +142,12 @@ int audio::list_devices_info(){
 
     std::cout << "maxInputChannels:\t"  << deviceInfo->maxInputChannels << "\n" ;
     std::cout << "maxOutputChannels:\t"  << deviceInfo->maxOutputChannels << "\n" ;
-    std::cout << "defaultLowInputLatency:\t"  << deviceInfo->defaultLowInputLatency << "\n" ;
-    std::cout << "defaultLowOutputLatency:\t"  << deviceInfo->defaultLowOutputLatency << "\n" ;
-    std::cout << "defaultHighInputLatency:\t"  << deviceInfo->defaultHighInputLatency << "\n" ;
-    std::cout << "defaultHighOutputLatency:\t"  << deviceInfo->defaultHighOutputLatency << "\n" ;
+    if ( show_latencies ) {
+      std::cout << "defaultLowInputLatency:\t"  << deviceInfo->defaultLowInputLatency << "\n" ;
+      std::cout << "defaultLowOutputLatency:\t"  << deviceInfo->defaultLowOutputLatency << "\n" ;
+      std::cout << "defaultHighInputLatency:\t"  << deviceInfo->defaultHighInputLatency << "\n" ;
+      std::cout << "defaultHighOutputLatency:\t"  << deviceInfo->defaultHighOutputLatency << "\n" ;
+    }
     std::cout << "defaultSampleRate:\t"  << deviceInfo->defaultSampleRate << "\n" ;
     std::cout << std::flush ;
   }

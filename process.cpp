@@ -2,9 +2,10 @@
 #include "process.h"
 #include <iostream>
 
-process::process() :
+process::process( std::string fn ) :
   sample_rate( 1 ),
-  channels( 1 )
+  channels( 1 ),
+  outfilename( fn )
 {
 
 };
@@ -44,9 +45,10 @@ void process::open_snd_file() {
   //info.format=SF_FORMAT_WAV | SF_FORMAT_FLOAT ;
   info.channels = channels ;
   info.samplerate = sample_rate ;
-  const char* outfilename = "foo2.wav" ;
+  //const char* outfilename = "foo2.wav" ;
 
-  infile =  sf_open(outfilename, SFM_WRITE, &info ) ;
+  //infile =  sf_open(outfilename, SFM_WRITE, &info ) ;
+  infile =  sf_open( outfilename.c_str(), SFM_WRITE, &info ) ;
   if ( not infile ) {
     std::cout << "Cannot open sound file: " << outfilename << std::endl ;
   }

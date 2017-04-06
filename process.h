@@ -4,12 +4,13 @@
 #include "audio_proc.h"
 
 #include <sndfile.h>
+#include <string>
 
 class process : public audio_proc
 {
  public:
-  process();
-  ~process();
+  process( std::string filename ) ;
+  ~process() ;
 
    void callback( float* buf, int Nch, int Nsamples ) ;
    void set_sample_rate( float val ) ;
@@ -24,6 +25,7 @@ class process : public audio_proc
   SNDFILE* infile ;
   double sample_rate ;
   int channels ;
+  std::string outfilename ;
 };
 
 

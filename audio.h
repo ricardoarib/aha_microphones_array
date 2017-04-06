@@ -21,7 +21,7 @@ class audio{
   /*!
    Sarches devices and list their info.
   */
-  int list_devices_info();
+  int list_devices_info( bool show_latencies = false );
   PaDeviceIndex search_device(const char* str);
 
   /// \brief Opens the audio device and starts streamming.
