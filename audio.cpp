@@ -51,19 +51,20 @@ audio::audio() :
 
 
   levels = new float[256];
+
   PaError err;
   err = Pa_Initialize();
 
 
   if( err != paNoError ) {
-    //printf( "PortAudio error: %s\n", Pa_GetErrorText( err ) );
-    //return 1;
+    std::cout << "PortAudio error: %s\n" <<  Pa_GetErrorText( err ) << std::endl ;
     goto error;
   };
 
   pa_init = true;
 
   return;
+
  error:
 
   return;
@@ -270,7 +271,7 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
 			   const PaStreamCallbackTimeInfo* timeInfo,
                             PaStreamCallbackFlags statusFlags )
 {
-   _framesPerBuffer = framesPerBuffer;
+  _framesPerBuffer = framesPerBuffer;
   
   const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
   //  SAMPLE *rptr2 = (SAMPLE*)inputBuffer;
@@ -291,7 +292,7 @@ int audio::callback( const void *inputBuffer, void *outputBuffer,
   }
   */
 
-  input_ring_buf.put( (float*) inputBuffer, framesPerBuffer * num_channels );;
+  input_ring_buf.put( (float*) inputBuffer, framesPerBuffer * num_channels );
   //_framesPerBuffer = framesPerBuffer * num_channels ;  
   for(int i=0; i<framesPerBuffer; i++ ) {
     for (int c=0; c<num_channels; c++ ) {
@@ -313,7 +314,7 @@ static int external_callback( const void *inputBuffer, void *outputBuffer,
                             PaStreamCallbackFlags statusFlags,
                             void *userData )
 {
-  reinterpret_cast<audio*>(userData)->callback( inputBuffer, outputBuffer, framesPerBuffer, timeInfo, statusFlags ) ;
+  return reinterpret_cast<audio*>(userData)->callback( inputBuffer, outputBuffer, framesPerBuffer, timeInfo, statusFlags ) ;
 }
 
 
@@ -409,3 +410,4 @@ void audio::stop_callback_thread() {
 ////////////////////// callback_thread //////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
+
