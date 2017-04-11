@@ -55,9 +55,18 @@ int user_interface::go() {
   useconds_t sleep_time_us = 1.0 / gui_rate * 1000000.0 ;
 
 
-  while ( count < 10*1000 ) {
+  while ( count < 100 ) {
 
     std::cout << "\r" ;
+
+    /*
+    char kp ;
+    std::cin >> kp ;
+    if ( kp ) {
+      std::cout << "Pressed key: " << kp << std::endl ;
+      break ;
+    }
+    */
 
 
     for (int c=0; c<num_channels; c++ ) {
