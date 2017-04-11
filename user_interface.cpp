@@ -11,9 +11,7 @@
 
 #include "ascii_meters.h"
 
-
-user_interface::user_interface( audio* aa, process* pp ) :
-  a( aa ),
+user_interface::user_interface( process* pp ) :
   p( pp )
 {
 
@@ -28,48 +26,50 @@ user_interface::~user_interface() {
 
 int user_interface::go() {
 
-  int num_samples = 1024*4;
-  int num_channels = a->get_num_channels();
+  std::cout << "user_interface::go()" << std::endl ;
 
+  int num_channels = p->get_num_channels();
+
+  /*
   float levels_max[ num_channels ] ;
   int levels_counts[ num_channels ] ;
   for ( int i=0; i<num_channels; i++ ) {
     levels_max[i] = 0.0 ;
     levels_counts[i] = 0 ;
   }
+  */
+
+  std::cout << "vu meters (dBFS) \n" ;
+
+  for (int i=1; i<=num_channels; i++)
+    std::cout << i%10;
+  for (int i=1; i<=num_channels; i++)
+    std::cout << "  " << std::setw(3) << i << "   " ;
+  std::cout << std::endl;
 
 
-  if (!a->is_streamming())
-    return -1;
 
-
-  std::cout << "cpu %  | count |   vu meters (dBFS) \n" ;
   float total_rec_time = 3; // seconds
   int count = 0;
-  double cpu;
   double gui_rate = 25.0 ; // Hz
   useconds_t sleep_time_us = 1.0 / gui_rate * 1000000.0 ;
-  //double sample_rate = a->get_sample_rate() ;
+
 
   while ( count < 10*1000 ) {
 
-    count = a->get_count();
-    cpu = a->get_cpu_load();
-    //std::cout << "\rcount = " << count << "         " ;
-    std::cout << "\r" << std::setprecision(2) << std::setw(6) << cpu *100 << " | " << std::setw(5) << count << " | " ;
+    std::cout << "\r" ;
 
 
-    //std::cout << "\n";
     for (int c=0; c<num_channels; c++ ) {
-      print_vertical_bar_dB( a->get_level(c) ) ;
+      print_vertical_bar_dB( p->get_level(c) ) ;
     }
     for (int c=0; c<num_channels; c++ ) {
       //print_bar( levels[c] ) ;
-      //print_bar( a->get_level(c), levels_max[c], levels_counts[c] ) ;
-      print_db( a->get_level(c) ) ;
-      //print_vertical_bar( a->get_level(c) ) ;
-      //print_horizontal_bar( a->get_level(c) ) ;
-      print_horizontal_bar( a->get_level(c), 3 ) ;
+      //print_bar( p->get_level(c), levels_max[c], levels_counts[c] ) ;
+      print_db( p->get_level(c) ) ;
+      //print_vertical_bar( p->get_level(c) ) ;
+      //print_horizontal_bar( p->get_level(c) ) ;
+      print_horizontal_bar( p->get_level(c), 3 ) ;
     }
 
 
@@ -82,11 +82,7 @@ int user_interface::go() {
     print_needle( val, 20 ) ;
 
 
-    //std::cout << std::endl ;
-    //std::cout << " fpb=" << a->get_framesPerBuffer() << std::endl ;
-    std::cout << " fpb=" << a->get_framesPerBuffer() ;
     std::cout << std::flush ;
-
 
     usleep( sleep_time_us ) ;
 

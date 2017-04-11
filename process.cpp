@@ -5,13 +5,18 @@
 process::process( std::string fn ) :
   sample_rate( 1 ),
   channels( 1 ),
-  outfilename( fn )
+  outfilename( fn ),
+  count( 0 )
+  //levels( 0 )
 {
-
+  //levels = new float[256] ;
+  for (int i=0; i< 256; i++)
+    levels[i] = 0 ;
 };
 
 
 process::~process(){
+  //delete [] levels ;
 };
 
 
@@ -19,6 +24,22 @@ process::~process(){
 
 void process::callback( float* buf, int Nch, int Nsamples ) {
 
+  // decay levels
+  for (int c=0; c<channels; c++ ) {
+    levels[c] *= 0.1f ;
+  }
+  // update levels
+  float* rptr = buf ;
+  for(int i=0; i<Nsamples; i++ ) {
+    for (int c=0; c<Nch; c++ ) {
+      float sample = *rptr++ ;
+      float sample_abs = (sample<0) ? -sample : sample ;
+      if ( levels[c] < sample_abs )
+	levels[c] = sample_abs ;
+    }
+  }
+
+  // write to wav file
   sf_write_float( infile, buf, Nsamples * Nch ) ;
 
 };
@@ -36,6 +57,7 @@ void process::pre_start() {
 void process::post_stop() {
   close_snd_file();
 } ;
+
 
 
 void process::open_snd_file() {
@@ -61,3 +83,10 @@ void process::close_snd_file() {
   };
 } ;
 
+
+
+float process::get_level( int c) {
+  if (!levels) return 0.0f ;
+  if ( (c < 0) | (c >= channels) ) return 0.0f ;
+  return levels[c] ;
+};

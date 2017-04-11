@@ -89,26 +89,36 @@ int main( int argc, char** argv ) {
 
   // ------ Prepare all classes. ------
 
-  audio a;
+  audio a ;
   process p( filename ) ;
-  user_interface ui( &a, &p ) ;
+  user_interface ui( &p ) ;
 
   if ( a.open_device( device.c_str() ) ) {
     std::cout << "ERROR: Cannot open audio device." << std::endl ;
     return -1 ;
   }
 
-  a.set_audio_proc(&p) ;
-
-
+  a.set_audio_proc( &p, 1024 ) ;
 
   // ------ Start! ------
 
   a.start() ;
 
+  if ( !a.is_streamming() ) {
+    std::cout << "Ooops! Portaudio is not streamming (but it should)." << std::endl ;
+    return -1 ;
+  }
 
 
   // ------ Goto the user interface. ------
+
+  int count = a.get_count() ;
+  float cpu = a.get_cpu_load() ;
+
+  std::cout << std::setprecision(2) << std::setw(6) << cpu *100 << " | " << std::setw(5) << count << " | " ;
+
+  std::cout << " fpb=" << a.get_framesPerBuffer() ;
+  std::cout << std::endl ;
 
 
   return ui.go() ;
