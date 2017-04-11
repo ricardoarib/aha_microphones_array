@@ -17,6 +17,7 @@
 
 #define PI 3.14159265358979
 
+#define DEFAULT_NUMBER_OF_SAMPLES 1024
 
 void* ui_thread(void * context){
   ((user_interface *)context)->go();
@@ -38,6 +39,7 @@ void help_cmdl( char** argv ) {
   std::cout << "    -o <soundfile>         - filename of the file where to save the audio ( default: out.wav )." << std::endl ;
   std::cout << "    -d <delay>             - delay (in miliseconds) between process callback calls. Slows down the simulation. (default = 0.0)" << std::endl ;
   std::cout << "    -r                     - Slows down simulation to a speed similar to real time. this overides the -d option." << std::endl ;
+  std::cout << "    -N <number>            - Sets the number of samples per callback. (default = " << DEFAULT_NUMBER_OF_SAMPLES << ")" << std::endl ;
   std::cout << "    -h                     - show this help." << std::endl ;
   std::cout << "    -v                     - show software version." << std::endl ;
   std::cout << "    " << std::endl;
@@ -53,9 +55,10 @@ int main( int argc, char** argv ) {
   std::string filename_out ;
   float delay_ms = 0 ;
   bool realtime = false ;
+  int Nsamples = DEFAULT_NUMBER_OF_SAMPLES ;
 
   int opt;
-  while ( ( opt = getopt(argc,argv,"hvro:d:") ) != -1 ) {
+  while ( ( opt = getopt(argc,argv,"hvro:d:N:") ) != -1 ) {
     switch ( opt ) {
     case 'o' :
       filename_out.assign( optarg ) ;
@@ -65,6 +68,9 @@ int main( int argc, char** argv ) {
       break ;
     case 'r' :
       realtime = true ;
+      break ;
+    case 'N' :
+      Nsamples = atoi( optarg ) ;
       break ;
     case 'h' :
       help_cmdl( argv ) ;
@@ -98,7 +104,7 @@ int main( int argc, char** argv ) {
     std::cout << "Delay between callback calls:    " << delay_ms << " miliseconds" << std::endl ;
 
 
-  int Nsamples = 1024 ;
+
 
   // ------ prepare input sound file ------
 

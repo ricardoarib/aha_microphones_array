@@ -3,9 +3,9 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-#include <sndfile.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <cstdlib>
 
 #include "audio.h"
 #include "process.h"
@@ -13,6 +13,8 @@
 #include "user_interface.h"
 
 #define PI 3.14159265358979
+
+#define DEFAULT_NUMBER_OF_SAMPLES 1024
 
 void version() {
   std::cout << "version 0.1.0" << std::endl ;
@@ -25,6 +27,7 @@ void help_cmdl( char** argv ) {
   std::cout << "options:        " << std::endl ;
   std::cout << "    -d <device_name>       - defines the name of the device to use ( default: STM32 )." << std::endl ;
   std::cout << "    -o <sound_filename>    - defines the file where to save the audio ( default: out.wav )." << std::endl ;
+  std::cout << "    -N <number>            - Sets the number of samples per callback. (default = " << DEFAULT_NUMBER_OF_SAMPLES << ")" << std::endl ;
   std::cout << "    -h                     - show this help." << std::endl ;
   std::cout << "    -v                     - show software version." << std::endl ;
   std::cout << "    " << std::endl;
@@ -44,15 +47,19 @@ int main( int argc, char** argv ) {
 
   std::string device ;
   std::string filename ;
+  int Nsamples = DEFAULT_NUMBER_OF_SAMPLES ;
 
   int opt;
-  while ( ( opt = getopt(argc,argv,"hvld:o:") ) != -1 ) {
+  while ( ( opt = getopt(argc,argv,"hvld:o:N:") ) != -1 ) {
     switch ( opt ) {
     case 'd' :
       device.assign( optarg ) ;
       break ;
     case 'o' :
       filename.assign( optarg ) ;
+      break ;
+    case 'N' :
+      Nsamples = atoi( optarg ) ;
       break ;
     case 'h' :
       help_cmdl( argv ) ;
@@ -98,7 +105,7 @@ int main( int argc, char** argv ) {
     return -1 ;
   }
 
-  a.set_audio_proc( &p, 1024 ) ;
+  a.set_audio_proc( &p, Nsamples ) ;
 
   // ------ Start! ------
 
