@@ -9,8 +9,8 @@
 #include "pthread.h"
 
 #include <bitset>
+#include <cstdlib>
 
-//#include "audio.h"
 #include "process.h"
 #include "ascii_meters.h"
 #include "user_interface.h"
@@ -36,6 +36,8 @@ void help_cmdl( char** argv ) {
   std::cout << "    <soundfile>            - filename of the file containing the input sound data." << std::endl ;
   std::cout << "options:        " << std::endl ;
   std::cout << "    -o <soundfile>         - filename of the file where to save the audio ( default: out.wav )." << std::endl ;
+  std::cout << "    -d <delay>             - delay (in miliseconds) between process callback calls. Slows down the simulation. (default = 0.0)" << std::endl ;
+  std::cout << "    -r                     - Slows down simulation to a speed similar to real time. this overides the -d option." << std::endl ;
   std::cout << "    -h                     - show this help." << std::endl ;
   std::cout << "    -v                     - show software version." << std::endl ;
   std::cout << "    " << std::endl;
@@ -49,12 +51,20 @@ int main( int argc, char** argv ) {
 
   std::string filename_in ;
   std::string filename_out ;
+  float delay_ms = 0 ;
+  bool realtime = false ;
 
   int opt;
-  while ( ( opt = getopt(argc,argv,"hvo:") ) != -1 ) {
+  while ( ( opt = getopt(argc,argv,"hvro:d:") ) != -1 ) {
     switch ( opt ) {
     case 'o' :
       filename_out.assign( optarg ) ;
+      break ;
+    case 'd' :
+      delay_ms = atof( optarg ) ;
+      break ;
+    case 'r' :
+      realtime = true ;
       break ;
     case 'h' :
       help_cmdl( argv ) ;
@@ -82,7 +92,10 @@ int main( int argc, char** argv ) {
 
   std::cout << "Reading from file: " << filename_in << std::endl ;
   std::cout << "Saving to file:    " << filename_out << std::endl ;
-
+  if ( realtime )
+    std::cout << "Slowed down to realtime speed." << std::endl ;
+  else
+    std::cout << "Delay between callback calls:    " << delay_ms << " miliseconds" << std::endl ;
 
 
   int Nsamples = 1024 ;
@@ -114,6 +127,15 @@ int main( int argc, char** argv ) {
   float buf[ Nsamples * channels ] ;
 
 
+  // ------ determine delay value ------
+
+  useconds_t sleep_time_us ;
+  if ( realtime ) {
+    sleep_time_us = (float)Nsamples / info.samplerate * 1000000.0 ;
+  } else {
+    sleep_time_us = delay_ms * 1000 ;
+  }
+
   // ------ Prepare all classes. ------
 
   process p( filename_out ) ;
@@ -138,6 +160,7 @@ int main( int argc, char** argv ) {
   while ( read_count = sf_readf_float(infile,buf,Nsamples)  ) {
     // std::cout << "count = " << count++ << "  read_count = " << read_count << "   Nsamples = " << Nsamples << std::endl ;
     p.callback( buf, channels, read_count ) ;
+    usleep( sleep_time_us ) ;
   } ;
 
 
