@@ -1,14 +1,22 @@
 
 #include "process.h"
 #include <iostream>
+#include <cmath>
 
-process::process( std::string fn ) :
+process::process( std::string fn, int count ) :
   sample_rate( 1 ),
   channels( 1 ),
   outfilename( fn ),
-  count( 0 )
+  count( 0 ),
   //levels( 0 )
+  sample_count( 0 ),
+  sample_limit_number( 0 ),
+  limit_sample_number( false ),
+  processing_finished( false )
 {
+
+  set_samples_to_process( count ) ;
+
   //levels = new float[256] ;
   for (int i=0; i< 256; i++)
     levels[i] = 0 ;
@@ -18,7 +26,6 @@ process::process( std::string fn ) :
 process::~process(){
   //delete [] levels ;
 };
-
 
 
 
@@ -39,9 +46,25 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     }
   }
 
+
+
+  // ------ Has processing already finished? ------
+  if ( processing_finished )
+    return ;
+
+
+
   // write to wav file
   sf_write_float( infile, buf, Nsamples * Nch ) ;
 
+
+
+  // ------ finish processing? ------
+  sample_count += Nsamples ;
+  if ( limit_sample_number & ( sample_count > sample_limit_number ) ) {
+    processing_finished = true ;
+    return ;
+  }
 };
 
 
@@ -51,10 +74,12 @@ void process::set_channels( int val ) { channels = val ; } ;
 
 
 void process::pre_start() {
+  std::cout << "process::pre_start()" << std::endl ;
   open_snd_file();
 } ;
 
 void process::post_stop() {
+  std::cout << "process::post_stop()" << std::endl ;
   close_snd_file();
 } ;
 
@@ -90,3 +115,14 @@ float process::get_level( int c) {
   if ( (c < 0) | (c >= channels) ) return 0.0f ;
   return levels[c] ;
 };
+
+
+
+void process::set_samples_to_process( int count ){
+  if ( count <= 0 ) {
+    limit_sample_number = false ;
+  } else {
+    sample_limit_number = count ;
+    limit_sample_number = true ;
+  }
+}

@@ -27,6 +27,8 @@ void help_cmdl( char** argv ) {
   std::cout << "options:        " << std::endl ;
   std::cout << "    -d <device_name>       - defines the name of the device to use ( default: STM32 )." << std::endl ;
   std::cout << "    -o <sound_filename>    - defines the file where to save the audio ( default: out.wav )." << std::endl ;
+  std::cout << "    -n <number>            - Stop processing after <number> samples. By default it never stops."  << std::endl ;
+  //std::cout << "    -t <seconds>            - Stop processing after <seconds>. By default it never stops."  << std::endl ;
   std::cout << "    -N <number>            - Sets the number of samples per callback. (default = " << DEFAULT_NUMBER_OF_SAMPLES << ")" << std::endl ;
   std::cout << "    -h                     - show this help." << std::endl ;
   std::cout << "    -v                     - show software version." << std::endl ;
@@ -42,15 +44,22 @@ void list_devices() {
 
 int main( int argc, char** argv ) {
 
+  std::cout << "sizeof(bool)=" << sizeof(bool) << std::endl ;
+  std::cout << "sizeof(int)=" << sizeof(int) << std::endl ;
+  std::cout << "sizeof(float)=" << sizeof(float) << std::endl ;
+  std::cout << "sizeof(double)=" << sizeof(double) << std::endl ;
+  std::cout << "sizeof(void*)=" << sizeof(void*) << std::endl ;
 
   // ------ Parse command line options. ------
 
   std::string device ;
   std::string filename ;
   int Nsamples = DEFAULT_NUMBER_OF_SAMPLES ;
+  int samples_to_process = -1 ;
+  //float time_to_process = -1 ;
 
   int opt;
-  while ( ( opt = getopt(argc,argv,"hvld:o:N:") ) != -1 ) {
+  while ( ( opt = getopt(argc,argv,"hvld:o:N:n:t:") ) != -1 ) {
     switch ( opt ) {
     case 'd' :
       device.assign( optarg ) ;
@@ -58,6 +67,14 @@ int main( int argc, char** argv ) {
     case 'o' :
       filename.assign( optarg ) ;
       break ;
+    case 'n' :
+      samples_to_process = atoi( optarg ) ;
+      break ;
+      /*
+    case 't' :
+      time_to_process = atof( optarg ) ;
+      break ;
+      */
     case 'N' :
       Nsamples = atoi( optarg ) ;
       break ;
@@ -91,13 +108,15 @@ int main( int argc, char** argv ) {
 
   std::cout << "Using device:   " << device << std::endl ;
   std::cout << "Saving to file: " << filename << std::endl ;
+  if ( samples_to_process != -1 )
+    std::cout << "Will stop after reaching " << samples_to_process << " samples." << std::endl ;
 
 
 
   // ------ Prepare all classes. ------
 
   audio a ;
-  process p( filename ) ;
+  process p( filename, samples_to_process ) ;
   user_interface ui( &p ) ;
 
   if ( a.open_device( device.c_str() ) ) {
@@ -129,7 +148,6 @@ int main( int argc, char** argv ) {
 
 
   return ui.go() ;
-
 
 }
 

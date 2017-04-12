@@ -23,7 +23,6 @@ user_interface::~user_interface() {
 
 
 
-
 int user_interface::go() {
 
   std::cout << "user_interface::go()" << std::endl ;
@@ -50,13 +49,13 @@ int user_interface::go() {
 
 
   float total_rec_time = 3; // seconds
-  int count = 0;
   double gui_rate = 25.0 ; // Hz
   useconds_t sleep_time_us = 1.0 / gui_rate * 1000000.0 ;
 
 
-  while ( count < 100 ) {
-
+  while ( 1 ) {
+    if ( p->is_finished() )
+      break ;
     std::cout << "\r" ;
 
     /*
