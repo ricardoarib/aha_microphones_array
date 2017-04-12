@@ -27,11 +27,15 @@ void help_cmdl( char** argv ) {
   std::cout << "options:        " << std::endl ;
   std::cout << "    -d <device_name>       - defines the name of the device to use ( default: STM32 )." << std::endl ;
   std::cout << "    -o <sound_filename>    - defines the file where to save the audio ( default: out.wav )." << std::endl ;
-  std::cout << "    -n <number>            - Stop processing after <number> samples. By default it never stops."  << std::endl ;
-  //std::cout << "    -t <seconds>            - Stop processing after <seconds>. By default it never stops."  << std::endl ;
+  std::cout << "    -n <number>            - Stop processing after <number> samples. By default it never stops. May be overriden by -t option.(*)"  << std::endl ;
+  std::cout << "    -t <seconds>           - Stop processing after <seconds>. By default it never stops. Overrides -n option.(*)"  << std::endl ;
   std::cout << "    -N <number>            - Sets the number of samples per callback. (default = " << DEFAULT_NUMBER_OF_SAMPLES << ")" << std::endl ;
   std::cout << "    -h                     - show this help." << std::endl ;
   std::cout << "    -v                     - show software version." << std::endl ;
+  std::cout << "    " << std::endl;
+  std::cout << "notes:    " << std::endl;
+  std::cout << "    The -n and -t options are not precise. The actual stopping time/samples may be larger and correspond to blocks of callback samples set by the -N option." << std::endl;
+  std::cout << "    " << std::endl;
   std::cout << "    " << std::endl;
 }
 
@@ -56,7 +60,7 @@ int main( int argc, char** argv ) {
   std::string filename ;
   int Nsamples = DEFAULT_NUMBER_OF_SAMPLES ;
   int samples_to_process = -1 ;
-  //float time_to_process = -1 ;
+  float time_to_process = -1 ;
 
   int opt;
   while ( ( opt = getopt(argc,argv,"hvld:o:N:n:t:") ) != -1 ) {
@@ -70,11 +74,9 @@ int main( int argc, char** argv ) {
     case 'n' :
       samples_to_process = atoi( optarg ) ;
       break ;
-      /*
     case 't' :
       time_to_process = atof( optarg ) ;
       break ;
-      */
     case 'N' :
       Nsamples = atoi( optarg ) ;
       break ;
@@ -108,21 +110,27 @@ int main( int argc, char** argv ) {
 
   std::cout << "Using device:   " << device << std::endl ;
   std::cout << "Saving to file: " << filename << std::endl ;
-  if ( samples_to_process != -1 )
-    std::cout << "Will stop after reaching " << samples_to_process << " samples." << std::endl ;
 
 
 
   // ------ Prepare all classes. ------
 
   audio a ;
-  process p( filename, samples_to_process ) ;
-  user_interface ui( &p ) ;
-
   if ( a.open_device( device.c_str() ) ) {
     std::cout << "ERROR: Cannot open audio device." << std::endl ;
     return -1 ;
   }
+
+  float sample_rate = a.get_sample_rate();
+  if ( time_to_process > 0 ) {
+    samples_to_process = time_to_process * sample_rate ;
+  }
+  if ( samples_to_process != -1 )
+    std::cout << "Will stop after reaching " << samples_to_process << " samples or " << (float)samples_to_process / sample_rate << " seconds." << std::endl ;
+
+  process p( filename, samples_to_process ) ;
+  user_interface ui( &p ) ;
+
 
   a.set_audio_proc( &p, Nsamples ) ;
 
