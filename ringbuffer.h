@@ -3,16 +3,18 @@
 
 #include "pa_ringbuffer.h"
 
+template<typename T>
 class ringbuffer{
  public:
   ringbuffer(int size);
   ~ringbuffer();
-  int put(float* d, int sz);
-  int get(float* d, int sz);
-  int available();
+  int put(T* d, int sz);
+  int get(T* d, int sz);
+  int available(); // to read
+  int free_space(); // to write
 
  private:
-  float* data;
+  T* data;
   PaUtilRingBuffer ringBuffer;
   int sz_samples;
   int numBytes;

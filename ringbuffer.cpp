@@ -7,26 +7,35 @@
 
 #include <iostream> // debug only
 
-ringbuffer::ringbuffer(int size) :
+
+
+// Explicit instantiation with all the types the template will be used with.
+template class ringbuffer<float>;
+template class ringbuffer<void*>;
+
+
+
+template<typename T>
+ringbuffer<T>::ringbuffer(int size) :
   sz_samples(size)
 {
   
-  numBytes = size * sizeof(float);
-  data = (float*) malloc(numBytes);
+  numBytes = size * sizeof(T);
+  data = (T*) malloc(numBytes);
   // TODO: check for malloc errors
-  if ( PaUtil_InitializeRingBuffer( &ringBuffer, sizeof(float), size, data ) < 0 ) {
+  if ( PaUtil_InitializeRingBuffer( &ringBuffer, sizeof(T), size, data ) < 0 ) {
     std::cout << "Failed to initialize ring buffer. Size is not power of 2 ?? size = " << size << std::endl;
   }
   
 };
 
-
-ringbuffer::~ringbuffer(){
+template<typename T>
+ringbuffer<T>::~ringbuffer(){
   free( data );
 };
 
-
-int ringbuffer::put(float* d, int sz){
+template<typename T>
+int ringbuffer<T>::put(T* d, int sz){
   ring_buffer_size_t elementsFree = PaUtil_GetRingBufferWriteAvailable( &ringBuffer ) ;
   int sz_to_put = ( elementsFree < sz )? elementsFree : sz ;
   if ( !sz_to_put ) {
@@ -42,7 +51,7 @@ int ringbuffer::put(float* d, int sz){
   idx[1] = sizes[0] ;
 
   for ( int i = 0; i < 2 && ptr[i] != NULL; ++i ) {
-    memcpy( ptr[i], d+idx[i], sizes[i]*sizeof(float) );
+    memcpy( ptr[i], d+idx[i], sizes[i]*sizeof(T) );
   }
   PaUtil_AdvanceRingBufferWriteIndex( &ringBuffer, sz_to_put ) ;
   
@@ -50,8 +59,8 @@ int ringbuffer::put(float* d, int sz){
   
 };
 
-
-int ringbuffer::get(float* d, int sz){
+template<typename T>
+int ringbuffer<T>::get(T* d, int sz){
   ring_buffer_size_t elementsInBuffer = PaUtil_GetRingBufferReadAvailable( &ringBuffer ) ;
   int sz_to_get = ( elementsInBuffer < sz )? elementsInBuffer : sz ;
   if ( !sz_to_get ) {
@@ -68,7 +77,7 @@ int ringbuffer::get(float* d, int sz){
 
   if ( elementsRead )  {
     for ( int i = 0; i < 2 && ptr[i] != NULL; ++i ) {
-      memcpy( d+idx[i], ptr[i], sizes[i]*sizeof(float) );
+      memcpy( d+idx[i], ptr[i], sizes[i]*sizeof(T) );
     }
     PaUtil_AdvanceRingBufferReadIndex( &ringBuffer, elementsRead ) ;
   }
@@ -78,7 +87,14 @@ int ringbuffer::get(float* d, int sz){
 };
 
 
-
-int ringbuffer::available(){
+template<typename T>
+int ringbuffer<T>::available() {
   return  PaUtil_GetRingBufferReadAvailable( &ringBuffer ) ;
 }
+
+template<typename T>
+int ringbuffer<T>::free_space() {
+  return PaUtil_GetRingBufferWriteAvailable( &ringBuffer ) ;
+}
+
+

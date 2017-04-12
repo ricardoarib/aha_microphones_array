@@ -2,6 +2,7 @@
 #define process_h
 
 #include "audio_proc.h"
+#include "ringbuffer.h"
 
 #include <sndfile.h>
 #include <string>
@@ -31,9 +32,11 @@ class process : public audio_proc
   int get_num_channels() { return channels; } ;
   bool is_finished() { return processing_finished ;  } ;
   void set_samples_to_process( int count ) ;
+  processed_data* get_result() ; // Do not forget to delete the data pointed to by the address returned after done using it.
  private:
   void open_snd_file() ;
   void close_snd_file() ;
+  void send_result( processed_data* d ) ;
 
 
   SNDFILE* infile ;
@@ -49,6 +52,7 @@ class process : public audio_proc
   bool limit_sample_number ;
   bool processing_finished ;
 
+  ringbuffer<void*> rb_results ;
 };
 
 

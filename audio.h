@@ -61,7 +61,7 @@ class audio{
   double sample_rate;
   float* levels;
 
-  ringbuffer input_ring_buf ;
+  ringbuffer<float> input_ring_buf ;
   
   unsigned long _framesPerBuffer;
 

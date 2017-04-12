@@ -3,6 +3,10 @@
 #include <iostream>
 #include <cmath>
 
+#define RESULTS_RING_BUFFER_SIZE 1024*sizeof(void*)
+
+#define PI 3.14159265358979
+
 process::process( std::string fn, int count ) :
   sample_rate( 1 ),
   channels( 1 ),
@@ -12,7 +16,8 @@ process::process( std::string fn, int count ) :
   sample_count( 0 ),
   sample_limit_number( 0 ),
   limit_sample_number( false ),
-  processing_finished( false )
+  processing_finished( false ),
+  rb_results( RESULTS_RING_BUFFER_SIZE )
 {
 
   set_samples_to_process( count ) ;
@@ -57,6 +62,20 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
   // write to wav file
   sf_write_float( infile, buf, Nsamples * Nch ) ;
 
+
+  //  /!\ For testing purposes only /!\  Create a sine wave to send to gui.
+  static float phase = 0 ;
+  //float val = 0.5 + 0.6 * sin(phase) ;
+  phase += .05 ;
+  if ( phase > PI )
+    phase -= 2*PI ;
+  float val = phase ;
+
+  // ------ Send the results ------
+  processed_data* d = new processed_data ;
+  d->angle = val ;
+
+  send_result( d ) ;
 
 
   // ------ finish processing? ------
@@ -126,3 +145,27 @@ void process::set_samples_to_process( int count ){
     limit_sample_number = true ;
   }
 }
+
+
+void process::send_result( processed_data* d ){
+
+  if ( rb_results.free_space() ) {
+    rb_results.put( (void**)&d, 1 ) ;
+  } else {
+    std::cout << "rb_results full!!" << std::endl ;
+    delete d;
+  }
+
+};
+
+
+
+processed_data* process::get_result() {
+  if ( rb_results.available()  ) {
+    processed_data* r ;
+    rb_results.get( (void**)&r, 1 ) ;
+    return r;
+  }
+};
+
+
