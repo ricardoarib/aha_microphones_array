@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include "pthread.h"
+#include <signal.h>
 
 #include <bitset>
 #include <cstdlib>
@@ -167,6 +168,10 @@ int main( int argc, char** argv ) {
     // std::cout << "count = " << count++ << "  read_count = " << read_count << "   Nsamples = " << Nsamples << std::endl ;
     p.callback( buf, channels, read_count ) ;
     usleep( sleep_time_us ) ;
+
+    // check if ui thread is finished.
+    if ( pthread_kill( ui_thread_id, 0) )
+      break;
   } ;
 
 
