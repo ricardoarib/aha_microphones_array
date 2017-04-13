@@ -7,6 +7,7 @@
 #include <cmath>
 #include <sndfile.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <getopt.h>
 
 #include "ascii_meters.h"
@@ -47,6 +48,8 @@ int user_interface::go() {
   for (int i=1; i<=num_channels; i++)
     std::cout << "  " << std::setw(3) << i << "   " ;
 
+  std::cout << "   Spectrum                                                     " ;
+
   std::cout << "-180\u00B0     0\u00B0    180\u00B0" ;
 
   std::cout << std::endl;
@@ -54,6 +57,11 @@ int user_interface::go() {
   double gui_rate = 25.0 ; // Hz
   useconds_t sleep_time_us = 1.0 / gui_rate * 1000000.0 ;
 
+  /*
+  int flags = fcntl(0, F_GETFL, 0); // get current file status flags
+  flags |= O_NONBLOCK;          // turn off blocking flag
+  fcntl(0, F_SETFL, flags);         // set up non-blocking read
+  */
 
   while ( 1 ) {
 
@@ -66,8 +74,7 @@ int user_interface::go() {
     char kp ;
     std::cin >> kp ;
     if ( kp ) {
-      std::cout << "Pressed key: " << kp << std::endl ;
-      break ;
+      std::cout << "\n\nPressed key: \n" << kp << std::endl ;
     }
     */
 
@@ -101,6 +108,9 @@ int user_interface::go() {
       results = tmp_results ;
     }
     if ( results ) {
+      for (int i=0; i<results->Nspec; i++){
+	print_vertical_bar_dB( results->spec[i] ) ;
+      }
       print_needle( results->angle / (2*PI) + 0.5 , 20 ) ;
       std::cout << std::setw(6) << results->angle * 180.0/PI << "\u00B0" ;
     }

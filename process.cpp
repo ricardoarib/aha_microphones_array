@@ -2,6 +2,7 @@
 #include "process.h"
 #include <iostream>
 #include <cmath>
+#include "kiss_fft.h"
 
 #define RESULTS_RING_BUFFER_SIZE 1024*sizeof(void*)
 
@@ -59,23 +60,52 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
 
 
 
-  // write to wav file
+  // ------ write to wav file ------
   sf_write_float( infile, buf, Nsamples * Nch ) ;
 
 
-  //  /!\ For testing purposes only /!\  Create a sine wave to send to gui.
+  // ------ allocate place to put the results ------
+  processed_data* results = new processed_data ;
+
+
+
+  //  /!\ For testing purposes only /!\  Create a sine wave/ramp to send to gui.
   static float phase = 0 ;
   //float val = 0.5 + 0.6 * sin(phase) ;
   phase += .05 ;
   if ( phase > PI )
     phase -= 2*PI ;
   float val = phase ;
+  results->angle = val ;
+
+  // ------ Do an FFT ------
+  int Nfft = 64*16 ;
+  kiss_fft_cfg cfg = kiss_fft_alloc( Nfft, 0, 0, 0 );
+  kiss_fft_cpx cx_in[Nfft];
+  kiss_fft_cpx cx_out[Nfft];
+
+  // put kth sample in cx_in[k].r and cx_in[k].i
+  int channel = 0;
+  for (int i = 0; i< Nfft; i++){
+    cx_in[i].r = buf[ i * Nch + channel ] ;
+    cx_in[i].i = 0.0 ;
+  }
+  kiss_fft( cfg , cx_in , cx_out );
+
+  // transformed. DC is in cx_out[0].r and cx_out[0].i
+  for (int i = 0; i< Nfft/16; i++){
+    results->spec[i] = sqrt( cx_out[i].r * cx_out[i].r + cx_out[i].i * cx_out[i].i ) ; // abs(...)
+    results->spec[i] *= 1.0 / (float)Nfft ;
+  }
+  results->Nspec = Nfft/16 ;
+
+  free(cfg);
+
 
   // ------ Send the results ------
-  processed_data* d = new processed_data ;
-  d->angle = val ;
 
-  send_result( d ) ;
+
+  send_results( results ) ;
 
 
   // ------ finish processing? ------
@@ -147,7 +177,7 @@ void process::set_samples_to_process( int count ){
 }
 
 
-void process::send_result( processed_data* d ){
+void process::send_results( processed_data* d ){
 
   if ( rb_results.free_space() ) {
     rb_results.put( (void**)&d, 1 ) ;

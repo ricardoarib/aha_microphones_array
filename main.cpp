@@ -24,8 +24,9 @@ void help_cmdl( char** argv ) {
   std::cout << "Usage:" << std::endl ;
   std::cout << argv[0] << " [options]" << std::endl ;
   version() ;
-  std::cout << "options:        " << std::endl ;
+  std::cout << "options:" << std::endl ;
   std::cout << "    -d <device_name>       - defines the name of the device to use ( default: STM32 )." << std::endl ;
+  std::cout << "    -l                     - lists all available audio devices." << std::endl ;
   std::cout << "    -o <sound_filename>    - defines the file where to save the audio ( default: out.wav )." << std::endl ;
   std::cout << "    -n <number>            - Stop processing after <number> samples. By default it never stops. May be overriden by -t option.(*)"  << std::endl ;
   std::cout << "    -t <seconds>           - Stop processing after <seconds>. By default it never stops. Overrides -n option.(*)"  << std::endl ;

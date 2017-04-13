@@ -11,6 +11,7 @@
 struct processed_data {
   float angle ;
   float spec[256] ;
+  int Nspec;
 };
 
 
@@ -36,7 +37,7 @@ class process : public audio_proc
  private:
   void open_snd_file() ;
   void close_snd_file() ;
-  void send_result( processed_data* d ) ;
+  void send_results( processed_data* d ) ;
 
 
   SNDFILE* infile ;
