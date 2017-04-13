@@ -21,4 +21,6 @@ class ringbuffer{
 };
 
 
+#include "ringbuffer.cpp"
+
 #endif

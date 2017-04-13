@@ -7,12 +7,14 @@
 
 #include <iostream> // debug only
 
-
-
 // Explicit instantiation with all the types the template will be used with.
-template class ringbuffer<float>;
-template class ringbuffer<void*>;
+//template class ringbuffer<float>;
+//template class ringbuffer<void*>;
 
+//void TemporaryFunction() {
+//  ringbuffer<float> tmp1(16) ;
+//  ringbuffer<void*> tmp2(16) ;
+//}
 
 
 template<typename T>
