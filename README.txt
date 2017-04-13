@@ -11,3 +11,6 @@ Dependencias:
 	Portaudio
 	LibSndFile
 
+Also uses:
+     KISS FFT
+
