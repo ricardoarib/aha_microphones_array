@@ -91,8 +91,8 @@ void print_vertical_bar( float val ){ /*!< Value*/
 
   int n = val * N ;
 
-  if ( n > N )
-    n = N;
+  if ( n > N-1 )
+    n = N-1;
   if ( n < 0 )
     n = 0;
 
