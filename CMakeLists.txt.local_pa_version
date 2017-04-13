@@ -35,12 +35,14 @@ ELSE(WIN32)
 ##ENDIF(WIN32 AND MSVC)
 ENDIF(WIN32)
 
+find_package (LibSndFile)
+include_directories(${LIBSNDFILE_INCLUDE_DIRS})
 
 add_executable( main main.cpp audio.cpp audio.cpp ringbuffer.cpp pa_ringbuffer.c process.cpp ascii_meters.cpp user_interface.cpp )
 add_dependencies( main portaudio )
 
 #target_link_libraries( main  portaudio )
-target_link_libraries( main libportaudio.so )
+target_link_libraries( main libportaudio.so pthread ${LIBSNDFILE_LIBRARIES})
 #target_link_libraries( main )
 
 # add a target to generate API documentation with Doxygen
