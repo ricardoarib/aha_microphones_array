@@ -20,12 +20,16 @@ process::process( std::string fn, int count ) :
   processing_finished( false ),
   rb_results( RESULTS_RING_BUFFER_SIZE )
 {
-
   set_samples_to_process( count ) ;
 
+  pthread_mutex_init( &mutex_levels, NULL ) ;
+
+  pthread_mutex_lock( &mutex_levels ) ;
   //levels = new float[256] ;
   for (int i=0; i< 256; i++)
     levels[i] = 0 ;
+  pthread_mutex_unlock( &mutex_levels ) ;
+
 };
 
 
@@ -37,6 +41,7 @@ process::~process(){
 
 void process::callback( float* buf, int Nch, int Nsamples ) {
 
+  pthread_mutex_lock( &mutex_levels ) ;
   // decay levels
   for (int c=0; c<channels; c++ ) {
     levels[c] *= 0.1f ;
@@ -51,7 +56,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
 	levels[c] = sample_abs ;
     }
   }
-
+  pthread_mutex_unlock( &mutex_levels ) ;
 
 
   // ------ Has processing already finished? ------
@@ -162,7 +167,10 @@ void process::close_snd_file() {
 float process::get_level( int c) {
   if (!levels) return 0.0f ;
   if ( (c < 0) | (c >= channels) ) return 0.0f ;
-  return levels[c] ;
+  pthread_mutex_lock( &mutex_levels ) ;
+  float val = levels[c] ;
+  pthread_mutex_unlock( &mutex_levels ) ;
+  return val ;
 };
 
 

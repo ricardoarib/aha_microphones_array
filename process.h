@@ -6,6 +6,7 @@
 
 #include <sndfile.h>
 #include <string>
+#include <pthread.h>
 
 
 struct processed_data {
@@ -47,6 +48,7 @@ class process : public audio_proc
 
   int count ;
   float levels[256] ;
+  pthread_mutex_t mutex_levels;
 
   int sample_count ;
   int sample_limit_number ;
