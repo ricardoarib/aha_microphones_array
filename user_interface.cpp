@@ -11,6 +11,7 @@
 #include <getopt.h>
 
 #include "ascii_meters.h"
+#include "nonblock_keyboard.h"
 
 #define PI 3.14159265358979
 
@@ -57,26 +58,34 @@ int user_interface::go() {
   double gui_rate = 25.0 ; // Hz
   useconds_t sleep_time_us = 1.0 / gui_rate * 1000000.0 ;
 
-  /*
-  int flags = fcntl(0, F_GETFL, 0); // get current file status flags
-  flags |= O_NONBLOCK;          // turn off blocking flag
-  fcntl(0, F_SETFL, flags);         // set up non-blocking read
-  */
+  nonblock_keyboard k ;
+  bool stop = false;
 
   while ( 1 ) {
 
+
     if ( p->is_finished() )
       break ;
+    if ( stop )
+      break ;
+
+
+    while ( k.kbhit() ) {
+      int c = k.getch(); // consume the character
+      //std::cout << "  key = " << c << std::flush ;
+      switch ( c ){
+      case 27: // esc
+	stop = true ;
+	break;
+      default:
+	break;
+      }
+    }
+
+
 
     std::cout << "\r" ;
 
-    /*
-    char kp ;
-    std::cin >> kp ;
-    if ( kp ) {
-      std::cout << "\n\nPressed key: \n" << kp << std::endl ;
-    }
-    */
 
     // ------ vu-meters ------
     for (int c=0; c<num_channels; c++ ) {
