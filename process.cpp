@@ -166,6 +166,7 @@ processed_data* process::get_result() {
     rb_results.get( (void**)&r, 1 ) ;
     return r;
   }
+  return 0;
 };
 
 
