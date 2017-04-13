@@ -14,3 +14,4 @@ Dependencias:
 Also uses:
      KISS FFT
 
+... and Vera knows about it.
