@@ -73,7 +73,40 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
   processed_data* results = new processed_data ;
 
 
+// ************************************************************************************************************************
+    
+    // Store signals
+    float signals [Nch][Nsamples];
+    for (int channel = 0; channel < Nch; channel++){
+        for (int i = 0; i < Nsamples; i++){
+            signals [channel][i] = buf [channel + i*Nch];
+        }
+    }
 
+    // Store specs
+    int Nfft = 64*16 ;
+    float specs[Nch][Nfft/16];
+    kiss_fft_cfg cfg = kiss_fft_alloc( Nfft, 0, 0, 0 );
+    kiss_fft_cpx cx_in[Nfft];
+    kiss_fft_cpx cx_out[Nfft];
+    
+    for (int channel = 0; channel < Nch; channel++){
+        for (int i = 0; i< Nfft; i++){
+            cx_in[i].r = buf[ i * Nch + channel ] ;
+            cx_in[i].i = 0.0 ;
+        }
+        kiss_fft( cfg , cx_in , cx_out );
+        for (int i = 0; i< Nfft/16; i++){
+            specs[channel][i] = sqrt( cx_out[i].r * cx_out[i].r + cx_out[i].i * cx_out[i].i ) ; // abs(...)
+            specs[channel][i] *= 1.0 / (float)Nfft ;
+        }
+    }
+    free(cfg);
+
+    
+// ************************************************************************************************************************
+
+    
   //  /!\ For testing purposes only /!\  Create a sine wave/ramp to send to gui.
   static float phase = 0 ;
   //float val = 0.5 + 0.6 * sin(phase) ;
@@ -83,6 +116,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
   float val = phase ;
   results->angle = val ;
 
+    /*
   // ------ Do an FFT ------
   int Nfft = 64*16 ;
   kiss_fft_cfg cfg = kiss_fft_alloc( Nfft, 0, 0, 0 );
@@ -105,10 +139,9 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
   results->Nspec = Nfft/16 ;
 
   free(cfg);
-
+     */
 
   // ------ Send the results ------
-
 
   send_results( results ) ;
 
