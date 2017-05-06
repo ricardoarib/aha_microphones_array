@@ -3,6 +3,12 @@
 #include <iostream>
 #include <cmath>
 #include "kiss_fft.h"
+#include <math.h>
+#include <iomanip>
+#include <fstream>
+
+
+using namespace std;
 
 #define RESULTS_RING_BUFFER_SIZE 1024*sizeof(void*)
 
@@ -37,6 +43,44 @@ process::~process(){
   //delete [] levels ;
 };
 
+// ************************************************************************************************************************
+// ***
+
+// Create cosine file
+
+
+void createSinusoidSignal (int Npoints, double * buffer){
+    double rate, result;
+    
+    for (int i = 0; i<Npoints; i++){
+        rate = 30.0 * i;
+        result = cos (rate * PI/180);
+        buffer [i] = result;
+      //  std::cout << "buffer [" << i << "]: " << buffer [i] << " and the result contains: " << result<< std::endl;
+    }
+}
+
+
+// Delay Calculation
+void delayCalculation (float * spec_ref, float * spec_signal, float * spec_result, int Nfft, int fs, float * delay, int * max_idx){
+    float num_spec_result, den_spec_result;
+    float spec_ref_abs, spec_signal_abs;
+    
+    for (int i = 0; i < Nfft; i++){
+        num_spec_result = spec_ref[i] * spec_signal[i];
+        
+        spec_ref_abs = (spec_ref[i]<0) ? -spec_ref[i] : spec_ref[i];
+        spec_signal_abs = (spec_signal[i]<0) ? -spec_signal[i] : spec_signal[i];
+        den_spec_result = spec_ref_abs * spec_signal_abs;
+        
+        spec_result[i] = num_spec_result/ den_spec_result;
+    }
+    
+    
+}
+
+// ***
+// ************************************************************************************************************************
 
 
 void process::callback( float* buf, int Nch, int Nsamples ) {
@@ -64,7 +108,6 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     return ;
 
 
-
   // ------ write to wav file ------
   sf_write_float( infile, buf, Nsamples * Nch ) ;
 
@@ -74,6 +117,8 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
 
 
 // ************************************************************************************************************************
+// ***
+
     
     // Store signals
     float signals [Nch][Nsamples];
@@ -83,9 +128,11 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
         }
     }
 
-    // Store specs
+    // Store spectrum
+    
+    /*
     int Nfft = 64*16 ;
-    float specs[Nch][Nfft/16];
+    float spectrums[Nch][Nfft/16];
     kiss_fft_cfg cfg = kiss_fft_alloc( Nfft, 0, 0, 0 );
     kiss_fft_cpx cx_in[Nfft];
     kiss_fft_cpx cx_out[Nfft];
@@ -97,13 +144,77 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
         }
         kiss_fft( cfg , cx_in , cx_out );
         for (int i = 0; i< Nfft/16; i++){
-            specs[channel][i] = sqrt( cx_out[i].r * cx_out[i].r + cx_out[i].i * cx_out[i].i ) ; // abs(...)
-            specs[channel][i] *= 1.0 / (float)Nfft ;
+            spectrums[channel][i] = sqrt( cx_out[i].r * cx_out[i].r + cx_out[i].i * cx_out[i].i ) ; // abs(...)
+            spectrums[channel][i] *= 1.0 / (float)Nfft ;
         }
     }
     free(cfg);
-
+    float spec[64];
     
+    float signal[1024];
+    for (int i = 0; i < Nsamples; i++){
+        signal[i] = signals[1][i];
+    }
+    
+    *spec = calcSpectrum (signal, Nfft);
+     
+     */
+    
+    
+    // Define reference spectrum
+  /*  int ref_channel = 0;
+    float ref_spectrum [Nfft/16];
+    for (int i = 0; i < Nfft/16; i++){
+        ref_spectrum [i] = spectrums[ref_channel][i];
+    }
+   */
+
+    // Generalized cross correlation
+//    int Nfft = 64*16;
+//    float num_specs [Nch][Nfft/16];
+//    float den_specs [Nch][Nfft/16];
+//    float xcorr [Nch][Nfft/16];
+    
+    /*
+    for (int channel = 0; channel < Nch; channel++){
+        for (int i; i < Nfft/16; i++){
+            num_specs [channel][i] =
+            den_specs [channel][i] =
+            xcorr [channel][i] =
+        }
+    
+    }*/
+    /*
+   
+     
+     
+     
+     for (int channel = 0; channel < Nch; channel++){
+     for(int i; i < 64; i++){
+     nspecs [channel][i] = ref_spec [channel][i] * specs[channel][i];
+     dspecs [channel][i] = sqrt( ref_spec[channel][i] * ref_spec[channel][i] ) * sqrt ( specs[channel][i] * specs[channel][i] );
+     xcorr [channel][i] = nspecs [channel][i] / dspecs[channel][i];
+     //    myfile << "Writing this to a file.\n" << endl;
+     }
+     }
+     //   myfile.close();
+     
+    // reverse FFT needed (!!!)
+    std::cout << "-------16------" << std::endl ;
+    
+    //[~, I] = max(abs(xc));
+    float xcorr_abs [10][64] = {0};
+    for (int channel = 0; channel < Nch; channel++){
+        for(int i; i < 64; i++){
+            xcorr_abs [channel][i] = sqrt (xcorr [channel][i] * xcorr [channel][i]);
+        }
+    }
+    std::cout << "-------16------" << std::endl ;
+    
+
+     */
+    
+// ***
 // ************************************************************************************************************************
 
     
@@ -115,7 +226,64 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     phase -= 2*PI ;
   float val = phase ;
   results->angle = val ;
+    
+    
+    // ::::::::::::::::::::::::::::::::::::::::::
+    int Npts = 2400;
+    double buffer[Npts];
+    
+    createSinusoidSignal(Npts, &buffer[0]);
+    
+    int Nfft = 64*16;
+    float buf_spec[Nfft];
+    
+    kiss_fft_cfg cfg = kiss_fft_alloc ( Nfft, 0, 0, 0);
+    kiss_fft_cpx cx_in [Nfft]; //ou cx_in[Npts] ???
+    kiss_fft_cpx cx_out [Nfft];
+    
+    for (int i = 0; i<Npts; i++){
+        cx_in[i].r = buffer[i];
+        cx_in[i].i = 0.0;
+    }
+    kiss_fft (cfg , cx_in, cx_out);
+    
+    //std::cout << "begin" << std::endl ;
+    for (int i = 0; i<Nfft; i++){
+        buf_spec[i] = sqrt( cx_out[i].r * cx_out[i].r + cx_out[i].i * cx_out[i].i ) ;
+        buf_spec[i]  *= 1.0 / (float)Nfft ;
+        //std::cout <<"buffer: "<<buf_spec[i] << std::endl ;
+    }
+    free(cfg);
+    
+    //std::cout << "done" << std::endl ;
+    kiss_fft_cfg i_cfg = kiss_fft_alloc( Npts, 1, NULL, NULL);
+    kiss_fft_cpx i_cx_in [Nfft];
+    kiss_fft_cpx i_cx_out [Nfft];
+    
+    double i_buffer[Npts];
 
+    for (int i = 0; i<Npts; i++){
+        i_cx_in[i].r = buf_spec[i];
+        i_cx_in[i].i = 0.0;
+    }
+    kiss_fft (i_cfg , i_cx_in, i_cx_out);
+    
+    std::cout << "begin" << std::endl ;
+    for (int i = 0; i<Nfft; i++){
+        //i_buffer[i] =(float) sqrt( i_cx_out[i].r * i_cx_out[i].r);
+        i_buffer[i] = sqrt( i_cx_out[i].r * i_cx_out[i].r + i_cx_out[i].i * i_cx_out[i].i )-Nfft ;
+        buf_spec[i]  *= 1.0 / (float)Nfft ;
+        std::cout <<"ibuffer: "<<i_buffer[i] << std::endl ;
+        //std::cout <<"cx_out: "<<cx_out[i].r<< std::endl ;
+    }
+    free(i_cfg);
+    std::cout << "done" << std::endl ;
+    
+    
+    
+    // ::::::::::::::::::::::::::::::::::::::::::
+    
+    
     /*
   // ------ Do an FFT ------
   int Nfft = 64*16 ;
