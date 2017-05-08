@@ -52,12 +52,15 @@ process::~process(){
 void createSinusoidSignal (int Npoints, double * buffer){
     double rate, result;
     
+    //std::cout << "begin" << std::endl;
     for (int i = 0; i<Npoints; i++){
-        rate = 30.0 * i;
+        rate = 5.0 * i;
         result = cos (rate * PI/180);
         buffer [i] = result;
-      //  std::cout << "buffer [" << i << "]: " << buffer [i] << " and the result contains: " << result<< std::endl;
+        std::cout << "signal [" << i << "]: " << buffer [i] << std::endl;
+        //std::cout << result<< std::endl;
     }
+    //std::cout << "end" << std::endl;
 }
 
 
@@ -229,12 +232,12 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     
     // ::::::::::::::::::::::::::::::::::::::::::
-    int Npts = 2400;
+    int Npts = 64;
     double buffer[Npts];
     
     createSinusoidSignal(Npts, &buffer[0]);
     
-    int Nfft = 64*16;
+    int Nfft = 64;
     float buf_spec[Nfft];
     
     kiss_fft_cfg cfg = kiss_fft_alloc ( Nfft, 0, 0, 0);
@@ -249,9 +252,9 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     //std::cout << "begin" << std::endl ;
     for (int i = 0; i<Nfft; i++){
-        buf_spec[i] = sqrt( cx_out[i].r * cx_out[i].r + cx_out[i].i * cx_out[i].i ) ;
+        buf_spec[i] = sqrt( cx_out[i].r * cx_out[i].r + cx_out[i].i * cx_out[i].i );
         buf_spec[i]  *= 1.0 / (float)Nfft ;
-        //std::cout <<"buffer: "<<buf_spec[i] << std::endl ;
+        //std::cout <<buf_spec[i] << std::endl ;
     }
     free(cfg);
     
@@ -265,15 +268,19 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     for (int i = 0; i<Npts; i++){
         i_cx_in[i].r = buf_spec[i];
         i_cx_in[i].i = 0.0;
+        //i_cx_in[i] = buf_spec[i];
     }
-    kiss_fft (i_cfg , i_cx_in, i_cx_out);
+    //kiss_fft (i_cfg , i_cx_in, i_cx_out);
+    kiss_fft (i_cfg , cx_out, i_cx_out);
+    //kiss_fft (i_cfg , (kiss_fft_cpx*)&buf_spec[0], (kiss_fft_cpx*)&i_buffer[0]);
     
     std::cout << "begin" << std::endl ;
     for (int i = 0; i<Nfft; i++){
         //i_buffer[i] =(float) sqrt( i_cx_out[i].r * i_cx_out[i].r);
-        i_buffer[i] = sqrt( i_cx_out[i].r * i_cx_out[i].r + i_cx_out[i].i * i_cx_out[i].i )-Nfft ;
-        buf_spec[i]  *= 1.0 / (float)Nfft ;
-        std::cout <<"ibuffer: "<<i_buffer[i] << std::endl ;
+        i_buffer[i] = sqrt( i_cx_out[i].r * i_cx_out[i].r + i_cx_out[i].i * i_cx_out[i].i );
+        i_buffer[i]  *= 1.0 / (float)Nfft ;
+        std::cout <<"i_buffer["<<i<<"]: "<< i_buffer[i] << std::endl ;
+        //std::cout << i_buffer[i] << std::endl ;
         //std::cout <<"cx_out: "<<cx_out[i].r<< std::endl ;
     }
     free(i_cfg);
