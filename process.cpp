@@ -49,36 +49,116 @@ process::~process(){
 // Create cosine file
 
 
-void createSinusoidSignal (int Npoints, double * buffer){
-    double rate, result;
+void createSinusoidSignal (int Npoints, float * buffer){
+    float rate, result;
     
-    //std::cout << "begin" << std::endl;
     for (int i = 0; i<Npoints; i++){
-        rate = 5.0 * i;
+        rate = 10.0 * i;
         result = cos (rate * PI/180);
         buffer [i] = result;
-        std::cout << "signal [" << i << "]: " << buffer [i] << std::endl;
-        //std::cout << result<< std::endl;
     }
-    //std::cout << "end" << std::endl;
+}
+
+void addDelayToSignal (int Npts, float * signal, float * delayed_signal, float delay, int fs){
+    int length = Npts;
+    int delay_samples = (int) delay/fs;
+    
+    if (delay > 0){
+        for (int i = 0; i<delay_samples; i++){
+            delayed_signal[i] = 0;
+        }
+        int a = 0;
+        for (int i = delay_samples; i<length; i++){
+            delayed_signal[i] = signal[a];
+            a++;
+        }
+    }else if(delay < 0){
+        // to do, if needed
+    }else return ;
 }
 
 
-// Delay Calculation
-void delayCalculation (float * spec_ref, float * spec_signal, float * spec_result, int Nfft, int fs, float * delay, int * max_idx){
-    float num_spec_result, den_spec_result;
-    float spec_ref_abs, spec_signal_abs;
+float abs (float value){
+    value = sqrt(value * value);
+    return value;
+}
+
+int findMaxIdx (float * signal, int signal_length){
     
-    for (int i = 0; i < Nfft; i++){
-        num_spec_result = spec_ref[i] * spec_signal[i];
+    int max_idx = 0;
+    
+    for (int i = 0; i < signal_length; i++){
         
-        spec_ref_abs = (spec_ref[i]<0) ? -spec_ref[i] : spec_ref[i];
-        spec_signal_abs = (spec_signal[i]<0) ? -spec_signal[i] : spec_signal[i];
-        den_spec_result = spec_ref_abs * spec_signal_abs;
+        if (signal[max_idx] < signal[i]){
+            max_idx = i;
+        }
         
-        spec_result[i] = num_spec_result/ den_spec_result;
+    }
+    return max_idx;
+}
+
+float finMaxVal (float * signal, int signal_length){
+    
+    int max_idx;
+    float max_val;
+    
+    max_idx = findMaxIdx (&signal[0], signal_length);
+    max_val = signal[max_idx];
+    
+    return max_val;
+
+}
+
+
+void fft (int Nfft, float * signal, float * result_fft_RE, float * result_fft_IM){
+ 
+    kiss_fft_cfg cfg = kiss_fft_alloc ( Nfft, 0, 0, 0);
+    kiss_fft_cpx cx_in [Nfft];
+    kiss_fft_cpx cx_out [Nfft];
+ 
+    for (int i = 0; i<Nfft; i++){
+        cx_in[i].r = signal[i];
+        cx_in[i].i = 0.0;
+    }
+    kiss_fft (cfg , cx_in, cx_out);
+ 
+    for (int i = 0; i<Nfft; i++){
+        result_fft_RE [i] = cx_out[i].r;
+        result_fft_RE [i]  *= 1.0 / (float)Nfft ;
+     
+        result_fft_IM [i] = cx_out[i].i;
+        result_fft_IM [i] *= 1.0 / float(Nfft);
+    }
+    free(cfg);
+
+}
+
+int xcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float * spec2_IM, int fs){
+
+    
+    kiss_fft_cfg i_cfg = kiss_fft_alloc( Nfft, 1, NULL, NULL);
+    kiss_fft_cpx i_cx_in [Nfft];
+    kiss_fft_cpx i_cx_out [Nfft];
+    
+    float xc[Nfft];
+    
+    for (int i = 0; i<Nfft; i++){
+        i_cx_in[i].r = (spec1_RE[i] * spec2_RE[i] + spec1_IM[i] * spec2_IM[i])/(sqrt( spec1_RE[i] * spec1_RE[i] + spec1_IM[i] * spec1_IM[i] ) * sqrt( spec2_RE[i] * spec2_RE[i] + spec2_IM[i] * spec2_IM[i] ));
+        i_cx_in[i].i = (spec1_IM[i] * spec2_RE[i] - spec1_RE[i] * spec2_IM[i])/(sqrt( spec1_RE[i] * spec1_RE[i] + spec1_IM[i] * spec1_IM[i] ) * sqrt( spec2_RE[i] * spec2_RE[i] + spec2_IM[i] * spec2_IM[i] ));
     }
     
+    kiss_fft (i_cfg , i_cx_in, i_cx_out);
+    
+    for (int i = 0; i<Nfft; i++){
+        xc[i] = sqrt( i_cx_out[i].r * i_cx_out[i].r + i_cx_out[i].i * i_cx_out[i].i );
+        xc[i]  *= 1.0 / (float)Nfft ;
+    }
+    free(i_cfg);
+
+    int max_idx = 0;
+    
+    max_idx = findMaxIdx(&xc[0], Nfft);
+    return max_idx;
     
 }
 
@@ -131,91 +211,6 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
         }
     }
 
-    // Store spectrum
-    
-    /*
-    int Nfft = 64*16 ;
-    float spectrums[Nch][Nfft/16];
-    kiss_fft_cfg cfg = kiss_fft_alloc( Nfft, 0, 0, 0 );
-    kiss_fft_cpx cx_in[Nfft];
-    kiss_fft_cpx cx_out[Nfft];
-    
-    for (int channel = 0; channel < Nch; channel++){
-        for (int i = 0; i< Nfft; i++){
-            cx_in[i].r = buf[ i * Nch + channel ] ;
-            cx_in[i].i = 0.0 ;
-        }
-        kiss_fft( cfg , cx_in , cx_out );
-        for (int i = 0; i< Nfft/16; i++){
-            spectrums[channel][i] = sqrt( cx_out[i].r * cx_out[i].r + cx_out[i].i * cx_out[i].i ) ; // abs(...)
-            spectrums[channel][i] *= 1.0 / (float)Nfft ;
-        }
-    }
-    free(cfg);
-    float spec[64];
-    
-    float signal[1024];
-    for (int i = 0; i < Nsamples; i++){
-        signal[i] = signals[1][i];
-    }
-    
-    *spec = calcSpectrum (signal, Nfft);
-     
-     */
-    
-    
-    // Define reference spectrum
-  /*  int ref_channel = 0;
-    float ref_spectrum [Nfft/16];
-    for (int i = 0; i < Nfft/16; i++){
-        ref_spectrum [i] = spectrums[ref_channel][i];
-    }
-   */
-
-    // Generalized cross correlation
-//    int Nfft = 64*16;
-//    float num_specs [Nch][Nfft/16];
-//    float den_specs [Nch][Nfft/16];
-//    float xcorr [Nch][Nfft/16];
-    
-    /*
-    for (int channel = 0; channel < Nch; channel++){
-        for (int i; i < Nfft/16; i++){
-            num_specs [channel][i] =
-            den_specs [channel][i] =
-            xcorr [channel][i] =
-        }
-    
-    }*/
-    /*
-   
-     
-     
-     
-     for (int channel = 0; channel < Nch; channel++){
-     for(int i; i < 64; i++){
-     nspecs [channel][i] = ref_spec [channel][i] * specs[channel][i];
-     dspecs [channel][i] = sqrt( ref_spec[channel][i] * ref_spec[channel][i] ) * sqrt ( specs[channel][i] * specs[channel][i] );
-     xcorr [channel][i] = nspecs [channel][i] / dspecs[channel][i];
-     //    myfile << "Writing this to a file.\n" << endl;
-     }
-     }
-     //   myfile.close();
-     
-    // reverse FFT needed (!!!)
-    std::cout << "-------16------" << std::endl ;
-    
-    //[~, I] = max(abs(xc));
-    float xcorr_abs [10][64] = {0};
-    for (int channel = 0; channel < Nch; channel++){
-        for(int i; i < 64; i++){
-            xcorr_abs [channel][i] = sqrt (xcorr [channel][i] * xcorr [channel][i]);
-        }
-    }
-    std::cout << "-------16------" << std::endl ;
-    
-
-     */
     
 // ***
 // ************************************************************************************************************************
@@ -232,31 +227,43 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     
     // ::::::::::::::::::::::::::::::::::::::::::
-    int Npts = 64;
-    double buffer[Npts];
+    int Npts = 1024;
+    float buffer[Npts];
+    float delayed_buffer[Npts];
     
     createSinusoidSignal(Npts, &buffer[0]);
+    addDelayToSignal (Npts, &buffer[0], &delayed_buffer[0], 100, 1);
+    //for (int i=0; i<Npts; i++){
+    //    std::cout << "Signal_delayed["<<i<<"]: "<<delayed_buffer[i]<< std::endl;
+    //}
     
-    int Nfft = 64;
-    float buf_spec[Nfft];
+    //void fft (int Nfft, float * signal, float * result_fft){
+    int Nfft = 1024;
+    float result_fft_RE[Nfft], result_fft_IM[Nfft];
+
+    fft(Nfft, &buffer[0], &result_fft_RE[0], &result_fft_IM[0]);
     
-    kiss_fft_cfg cfg = kiss_fft_alloc ( Nfft, 0, 0, 0);
-    kiss_fft_cpx cx_in [Nfft]; //ou cx_in[Npts] ???
-    kiss_fft_cpx cx_out [Nfft];
+    // FFT SIG 2
+    float result_fft2_RE[Nfft], result_fft2_IM[Nfft];
+    fft(Nfft, &delayed_buffer[0], &result_fft2_RE[0], &result_fft2_IM[0]);
     
-    for (int i = 0; i<Npts; i++){
-        cx_in[i].r = buffer[i];
-        cx_in[i].i = 0.0;
-    }
-    kiss_fft (cfg , cx_in, cx_out);
+    float delay_result = 0;
+    int max_idx = 0;
+
     
-    //std::cout << "begin" << std::endl ;
-    for (int i = 0; i<Nfft; i++){
-        buf_spec[i] = sqrt( cx_out[i].r * cx_out[i].r + cx_out[i].i * cx_out[i].i );
-        buf_spec[i]  *= 1.0 / (float)Nfft ;
-        //std::cout <<buf_spec[i] << std::endl ;
-    }
-    free(cfg);
+    //int xcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float * spec2_IM, int fs){
+
+    int fs = 1; // DO NOT FORGET TO CHANGE THIS!
+    max_idx = xcorr(Nfft, &result_fft_RE[0], &result_fft_IM[0], &result_fft2_RE[0], &result_fft2_IM[0], fs);
+    //std::cout << "max_idx: "<< max_idx<< " para fs = "<<fs<< std::endl;
+    delay_result = max_idx/fs;
+    //std::cout << "delay result: "<< delay_result<< " para fs = "<<fs<< std::endl;
+    
+    // int findMaxIdx (float * signal, int signal_length){
+    //max_idx = findMaxIdx(buf_spec, Nfft);
+    //std::cout << "MAX_IDX: "<< max_idx << std::endl;
+    
+    /*
     
     //std::cout << "done" << std::endl ;
     kiss_fft_cfg i_cfg = kiss_fft_alloc( Npts, 1, NULL, NULL);
@@ -274,19 +281,18 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     kiss_fft (i_cfg , cx_out, i_cx_out);
     //kiss_fft (i_cfg , (kiss_fft_cpx*)&buf_spec[0], (kiss_fft_cpx*)&i_buffer[0]);
     
-    std::cout << "begin" << std::endl ;
+    //std::cout << "begin" << std::endl ;
     for (int i = 0; i<Nfft; i++){
         //i_buffer[i] =(float) sqrt( i_cx_out[i].r * i_cx_out[i].r);
         i_buffer[i] = sqrt( i_cx_out[i].r * i_cx_out[i].r + i_cx_out[i].i * i_cx_out[i].i );
         i_buffer[i]  *= 1.0 / (float)Nfft ;
-        std::cout <<"i_buffer["<<i<<"]: "<< i_buffer[i] << std::endl ;
+        //std::cout <<"i_buffer["<<i<<"]: "<< i_buffer[i] << std::endl ;
         //std::cout << i_buffer[i] << std::endl ;
         //std::cout <<"cx_out: "<<cx_out[i].r<< std::endl ;
     }
     free(i_cfg);
-    std::cout << "done" << std::endl ;
-    
-    
+    //std::cout << "done" << std::endl ;
+    */
     
     // ::::::::::::::::::::::::::::::::::::::::::
     
