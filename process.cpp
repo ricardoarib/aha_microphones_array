@@ -89,11 +89,18 @@ float abs (float value){
     return value;
 }
 
-int findMaxIdx (float * signal, int signal_length){
+int findMaxIdx (float * signal, int signal_length, int range){
     
     int max_idx = 0;
     
-    for (int i = 0; i < signal_length; i++){
+    for (int i = 0; i < range; i++){
+        
+        if (signal[max_idx] < signal[i]){
+            max_idx = i;
+        }
+        
+    }
+    for (int i = signal_length-range; i < signal_length; i++){
         
         if (signal[max_idx] < signal[i]){
             max_idx = i;
@@ -108,7 +115,7 @@ float finMaxVal (float * signal, int signal_length){
     int max_idx;
     float max_val;
     
-    max_idx = findMaxIdx (&signal[0], signal_length);
+    max_idx = findMaxIdx (&signal[0], signal_length, 30);
     max_val = signal[max_idx];
     
     return max_val;
@@ -155,14 +162,17 @@ int xcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float
     kiss_fft (i_cfg , i_cx_in, i_cx_out);
     
     for (int i = 0; i<Nfft; i++){
-        xc[i] = sqrt( i_cx_out[i].r * i_cx_out[i].r + i_cx_out[i].i * i_cx_out[i].i );
+        xc[i] = sqrt( i_cx_out[i].r * i_cx_out[i].r + i_cx_out[i].i * i_cx_out[i].i ); ///abs vs real (!!!)
         xc[i]  *= 1.0 / (float)Nfft ;
     }
     free(i_cfg);
 
     int max_idx = 0;
     
-    max_idx = findMaxIdx(&xc[0], Nfft);
+    max_idx = findMaxIdx(&xc[0], Nfft, 30);
+    
+    if (max_idx > Nfft/2) max_idx -= Nfft;
+        
     return max_idx;
     
 }
@@ -231,7 +241,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     // Store signals
     int number_mics = 8;
     float signals [number_mics][Nsamples];
-    int Nfft = 64*16;
+    int Nfft = Nsamples;
     
     for (int channel = 0; channel < number_mics; channel++){
         //std::cout << "Signal #"<<channel<< std::endl;
@@ -257,17 +267,20 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     // Send spec information
     float result_fft_RE[Nfft], result_fft_IM[Nfft];
     fft(Nfft, &signals[ref_channel][0], &result_fft_RE[0], &result_fft_IM[0]);
-    for (int i = 0; i< Nfft/16; i++){
+    for (int i = 0; i< Nfft/16/8; i++){
         results->spec[i] = sqrt( result_fft_RE[i] * result_fft_RE[i] + result_fft_IM[i] * result_fft_IM[i] ) ;
         results->spec[i] *= 1.0 / (float)Nfft ;
     }
-    results->Nspec = Nfft/16 ;
+    results->Nspec = Nfft/16/8;
     
     // Change reference
+    std::cout <<"\nDelays normalizados[ " ;
     for (int i = 0; i<number_mics; i++){
-        delays [i] = delays[i] - med_delay;
+        //delays [i] = delays[i] - med_delay;
         //std::cout <<"Delays normalizados["<<i<<"]: "<< delays[i]<< std::endl;
+        std::cout << delays[i] << ", " ;
     }
+    std::cout << " ]" << std::endl;
     
     // Optimization problem
     float pinv[2][8] = {2.500000000000000, 1.767766952966369, 0.000000000000000, -1.767766952966368, -2.500000000000000, -1.767766952966369, -0.000000000000000, 1.767766952966368, -0.000000000000001, 1.767766952966370, 2.500000000000000, 1.767766952966369, 0.000000000000001, -1.767766952966369, -2.500000000000000, -1.767766952966369};
@@ -288,11 +301,17 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     v[0] /= norm_v;
     v[1] /= norm_v;
     
+    std::cout << "\n v = ( " << v[0] << ", " << v[1] << " )" << std::endl ;
+    
     // Determine angle
     float val_angle = 0;
-    val_angle = atan (v[1]/v[0]);
+ //   val_angle = atan (v[1]/v[0]);
+    if (acos(v[0]) < PI/2) val_angle = asin(v[1]);
+    else val_angle = PI-asin(v[1]);
     //std::cout << "This is the angle =" <<val_angle<< std::endl;
     results->angle = val_angle ;
+
+    std::cout << "\n val_angle = " << val_angle << std::endl ;
     
 // ***
 // ************************************************************************************************************************

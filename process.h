@@ -10,9 +10,13 @@
 
 
 struct processed_data {
-  float angle = 0;
+  float angle ;
   float spec[256] ;
-  int Nspec = 0;
+  int Nspec ;
+  processed_data(){
+    angle = 0 ;
+    Nspec = 0 ;
+  };
 };
 
 
