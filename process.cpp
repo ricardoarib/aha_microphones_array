@@ -162,7 +162,8 @@ int xcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float
     kiss_fft (i_cfg , i_cx_in, i_cx_out);
     
     for (int i = 0; i<Nfft; i++){
-        xc[i] = sqrt( i_cx_out[i].r * i_cx_out[i].r + i_cx_out[i].i * i_cx_out[i].i ); ///abs vs real (!!!)
+        //xc[i] = sqrt( i_cx_out[i].r * i_cx_out[i].r + i_cx_out[i].i * i_cx_out[i].i ); //abs
+        xc[i] = i_cx_out[i].r; //real
         xc[i]  *= 1.0 / (float)Nfft ;
     }
     free(i_cfg);
