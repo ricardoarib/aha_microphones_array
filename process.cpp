@@ -11,10 +11,10 @@
 using namespace std;
 
 #define RESULTS_RING_BUFFER_SIZE 1024*sizeof(void*)
-
 #define PI 3.14159265358979
-
 #define FS 48000
+#define max_mics_distance 0.2
+
 
 process::process( std::string fn, int count ) :
   sample_rate( 1 ),
@@ -89,7 +89,12 @@ float abs (float value){
     return value;
 }
 
-int findMaxIdx (float * signal, int signal_length, int range){
+int findMaxIdx (float * signal, int signal_length){
+    
+    int margin = 5;
+    int range = max_mics_distance/340*FS + margin;
+    
+    std::cout << "Range: "<<range<< std::endl;
     
     int max_idx = 0;
     
@@ -115,7 +120,7 @@ float finMaxVal (float * signal, int signal_length){
     int max_idx;
     float max_val;
     
-    max_idx = findMaxIdx (&signal[0], signal_length, 30);
+    max_idx = findMaxIdx (&signal[0], signal_length);
     max_val = signal[max_idx];
     
     return max_val;
@@ -170,7 +175,7 @@ int xcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float
 
     int max_idx = 0;
     
-    max_idx = findMaxIdx(&xc[0], Nfft, 30);
+    max_idx = findMaxIdx(&xc[0], Nfft);
     
     if (max_idx > Nfft/2) max_idx -= Nfft;
         
