@@ -277,7 +277,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     // Change reference
     std::cout <<"\nDelays normalizados[ " ;
     for (int i = 0; i<number_mics; i++){
-        //delays [i] = delays[i] - med_delay;
+        delays [i] = delays[i] - med_delay;
         //std::cout <<"Delays normalizados["<<i<<"]: "<< delays[i]<< std::endl;
         std::cout << delays[i] << ", " ;
     }
@@ -292,8 +292,8 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
    
     for (int i = 0; i<number_mics; i++){
-        v[0] += pinv[0][i] * -(float)delays[i];
-        v[1] += pinv[1][i] * -(float)delays[i];
+        v[0] += pinv[0][i] * (float)delays[i];
+        v[1] += pinv[1][i] * (float)delays[i];
     }
     
     // Normalize resulting vector
