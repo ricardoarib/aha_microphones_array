@@ -94,7 +94,7 @@ int findMaxIdx (float * signal, int signal_length){
     int margin = 5;
     int range = max_mics_distance/340*FS + margin;
     
-    std::cout << "Range: "<<range<< std::endl;
+    //std::cout << "Range: "<<range<< std::endl;
     
     int max_idx = 0;
     
@@ -280,13 +280,13 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     results->Nspec = Nfft/16/8;
     
     // Change reference
-    std::cout <<"\nDelays normalizados[ " ;
+    //std::cout <<"\nDelays normalizados[ " ;
     for (int i = 0; i<number_mics; i++){
         delays [i] = delays[i] - med_delay;
         //std::cout <<"Delays normalizados["<<i<<"]: "<< delays[i]<< std::endl;
-        std::cout << delays[i] << ", " ;
+        //std::cout << delays[i] << ", " ;
     }
-    std::cout << " ]" << std::endl;
+    //std::cout << " ]" << std::endl;
     
     // Optimization problem
     float pinv[2][8] = {2.500000000000000, 1.767766952966369, 0.000000000000000, -1.767766952966368, -2.500000000000000, -1.767766952966369, -0.000000000000000, 1.767766952966368, -0.000000000000001, 1.767766952966370, 2.500000000000000, 1.767766952966369, 0.000000000000001, -1.767766952966369, -2.500000000000000, -1.767766952966369};
@@ -295,7 +295,6 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     //std::cout << std::setprecision(15) << std::fixed;
     
-   
     for (int i = 0; i<number_mics; i++){
         v[0] += pinv[0][i] * (float)delays[i];
         v[1] += pinv[1][i] * (float)delays[i];
@@ -307,17 +306,24 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     v[0] /= norm_v;
     v[1] /= norm_v;
     
-    std::cout << "\n v = ( " << v[0] << ", " << v[1] << " )" << std::endl ;
+    //std::cout << "\n v = ( " << v[0] << ", " << v[1] << " )" << std::endl ;
     
     // Determine angle
     float val_angle = 0;
  //   val_angle = atan (v[1]/v[0]);
-    if (acos(v[0]) < PI/2) val_angle = asin(v[1]);
-    else val_angle = PI-asin(v[1]);
+ //   if (acos(v[0]) < PI/2) val_angle = asin(v[1]); // the vector v is already normalized
+ //   else val_angle = PI-asin(v[1]);
+    
+    if (v[0] >= 0){ // the vector v is already normalized
+        val_angle = asin(v[1]);
+    }else{
+        if (v[1] >= 0) val_angle = PI - asin(v[1]);
+        else val_angle = -PI - asin(v[1]);
+    }
     //std::cout << "This is the angle =" <<val_angle<< std::endl;
     results->angle = val_angle ;
 
-    std::cout << "\n val_angle = " << val_angle << std::endl ;
+    //std::cout << "\n val_angle = " << val_angle << std::endl ;
     
 // ***
 // ************************************************************************************************************************
