@@ -538,6 +538,16 @@ void process::fill_grid (){
     }
 }
 
+void process::fill_grid2() {
+    for (int m = 0; m < NUM_MIC_PAIRS; m++){
+        for (int a = 0; a < (int)(ROOM_LENGTH/CELL_SIZE); a++) {
+            for (int b = 0; b < (int)(ROOM_WIDTH/CELL_SIZE); b++){
+                grid2 [m][a][b] = 0;
+            }
+        }
+    }
+}
+
 void process::post_stop() {
   std::cout << "process::post_stop()" << std::endl ;
   close_snd_file();

@@ -44,6 +44,7 @@ class process : public audio_proc
   void close_snd_file() ;
   void send_results( processed_data* d ) ;
     void fill_grid();
+    void fill_grid2();
 
 
   SNDFILE* infile ;
