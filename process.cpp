@@ -15,6 +15,12 @@ using namespace std;
 #define FS 48000
 #define max_mics_distance 0.2
 
+/*
+#define ROOM_LENGTH 1
+#define ROOM_WIDTH 1
+#define CELL_SIZE 0.1
+#define NUM_MIC_PAIRS 4
+*/
 
 process::process( std::string fn, int count ) :
   sample_rate( 1 ),
@@ -37,7 +43,11 @@ process::process( std::string fn, int count ) :
   for (int i=0; i< 256; i++)
     levels[i] = 0 ;
   pthread_mutex_unlock( &mutex_levels ) ;
-
+    
+    num_mic_pairs = NUM_MIC_PAIRS;
+    cell_size = CELL_SIZE;
+    room_length_n = (int)(ROOM_LENGTH/cell_size);
+    room_width_n = (int)(ROOM_WIDTH/cell_size);
 };
 
 
@@ -519,11 +529,11 @@ void process::pre_start() {
     // inicializar GRID
     fill_grid();
     open_snd_file();
-    grid2 = new float ** [NUM_MIC_PAIRS];
-    for (int m = 0; m < NUM_MIC_PAIRS; m++){
-        grid2[m] = new float * [(int)(ROOM_LENGTH/CELL_SIZE)];
-        for (int n = 0; n < (int)(ROOM_LENGTH/CELL_SIZE); n++){
-            grid2[m][n] = new float [(int)(ROOM_WIDTH/CELL_SIZE)];
+    grid2 = new float ** [num_mic_pairs];
+    for (int m = 0; m < num_mic_pairs; m++){
+        grid2[m] = new float * [room_length_n];
+        for (int n = 0; n < room_length_n; n++){
+            grid2[m][n] = new float [room_width_n];
         }
     }
 } ;
@@ -539,9 +549,9 @@ void process::fill_grid (){
 }
 
 void process::fill_grid2() {
-    for (int m = 0; m < NUM_MIC_PAIRS; m++){
-        for (int a = 0; a < (int)(ROOM_LENGTH/CELL_SIZE); a++) {
-            for (int b = 0; b < (int)(ROOM_WIDTH/CELL_SIZE); b++){
+    for (int m = 0; m < num_mic_pairs; m++){
+        for (int a = 0; a < room_length_n; a++) {
+            for (int b = 0; b < room_width_n; b++){
                 grid2 [m][a][b] = 0;
             }
         }
@@ -552,8 +562,8 @@ void process::post_stop() {
   std::cout << "process::post_stop()" << std::endl ;
   close_snd_file();
     //delete [] grid2; // detele com parentesis rectos por se tratar de um array (e nao de uma variavel)
-    for (int m = 0; m < NUM_MIC_PAIRS; m++){
-        for (int n = 0; n < (int)(ROOM_LENGTH/CELL_SIZE); n++){
+    for (int m = 0; m < num_mic_pairs; m++){
+        for (int n = 0; n < room_length_n; n++){
             delete [] grid2[m][n];
         }
         delete [] grid2[m];

@@ -68,6 +68,10 @@ class process : public audio_proc
 #define CELL_SIZE 0.1
 #define NUM_MIC_PAIRS 4
     
+    int num_mic_pairs;
+    int room_width_n, room_length_n; // cells
+    float cell_size; // m / cell
+    
     // Criar GRID
     float grid [NUM_MIC_PAIRS][ (int) (ROOM_LENGTH / CELL_SIZE) ][ (int) (ROOM_WIDTH / CELL_SIZE) ];
     
