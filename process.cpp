@@ -519,6 +519,13 @@ void process::pre_start() {
     // inicializar GRID
     fill_grid();
     open_snd_file();
+    grid2 = new float ** [NUM_MIC_PAIRS];
+    for (int m = 0; m < NUM_MIC_PAIRS; m++){
+        grid2[m] = new float * [(int)(ROOM_LENGTH/CELL_SIZE)];
+        for (int n = 0; n < (int)(ROOM_LENGTH/CELL_SIZE); n++){
+            grid2[m][n] = new float [(int)(ROOM_WIDTH/CELL_SIZE)];
+        }
+    }
 } ;
 
 void process::fill_grid (){
@@ -534,6 +541,14 @@ void process::fill_grid (){
 void process::post_stop() {
   std::cout << "process::post_stop()" << std::endl ;
   close_snd_file();
+    //delete [] grid2; // detele com parentesis rectos por se tratar de um array (e nao de uma variavel)
+    for (int m = 0; m < NUM_MIC_PAIRS; m++){
+        for (int n = 0; n < (int)(ROOM_LENGTH/CELL_SIZE); n++){
+            delete [] grid2[m][n];
+        }
+        delete [] grid2[m];
+    }
+    delete [] grid2;
 } ;
 
 
@@ -560,7 +575,6 @@ void process::close_snd_file() {
     std::cout << "Error closing sound file." << std::endl ;
   };
 } ;
-
 
 
 float process::get_level( int c) {
