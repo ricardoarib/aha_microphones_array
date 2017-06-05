@@ -202,6 +202,130 @@ int delayCalculation (int Nfft, int fs, float * signal1, float * signal2){
     
 }
 
+// Mics position
+
+/*
+ function [ pos ] = calcPos( angle, dist )
+ % Converts polar coordinates into cartesian
+ 
+ pos = dist * [ cos( angle * pi / 180)  sin( angle * pi /180 )];
+ 
+ end
+ */
+
+void calcPos ( int angle, int dist, float * pos){
+    pos[0] = dist * cos ( angle * PI /180 );
+    pos[1] = dist * sin ( angle * PI /180 );
+}
+
+
+// SRP TOOLS
+
+//----------- 1. Pair Microphones
+
+/*
+ num_mics = size(mics_position,1);
+ num_pairs = floor(num_mics/2);
+ dist_mtx = zeros (num_pairs, num_mics);
+ taken = zeros (num_mics,1);
+ pairs = zeros (num_pairs, 2);
+ 
+ for i = 1:num_pairs
+ taken (i) = 1;
+ for j = 1:num_mics
+ dist_mtx(i,j) = norm(mics_position(i,:)-mics_position(j,:));
+ end
+ [~, I] = max(dist_mtx(i,:));
+ while ismember(0,taken)
+ if taken(I) == 0
+ pairs(i,1) = i;
+ pairs(i,2) = I;
+ taken(I) = 1;
+ break;
+ else
+ dist_mtx(i,I)=0;
+ [~, I] = max(dist_mtx(i,:));
+ end
+ end
+ end
+ 
+ pairs = pairs(all(pairs,2),:);
+ */
+
+/*
+
+void pairMicrophones ( float * mic_pos, int num_mics, int * pair ){ // TODO
+    int num_pairs = (int) num_mics / 2;
+    
+    float dist_mtx[num_pairs][num_mics] = 0;
+}
+ 
+ */
+
+//----------- 2. Create Grid
+/*
+ function [ GRID ] = createGrid( room_width, room_length, cell_size, pairs, mics_position, fs )
+ %CreateGrid Divides the room in cells and estimates the theoretical delay
+ %between pairs of microphones (in samples)
+ %   The dimensions of the room and the size of the cell are provided so the
+ %   program goes through all of them and stores the theoretical TDOA (in
+ %   samples) for each pair of microphones
+ 
+ w = -room_width/2:cell_size:room_width/2; % rows = yy
+ l = -room_length/2:cell_size:room_length/2; % columns = xx
+ w = w* -1;
+ num_pairs = size(pairs, 1);
+ GRID = zeros ( length(w), length(l), num_pairs );
+ t = zeros(1,2);
+ c = 343.21; % Sound velocity in 20C air [ m/ s ]
+ 
+ for i = 1:length(w) % each line
+ for j = 1:length(l) % each column
+ source_position = [l(j) w(i)];
+ for k = 1:num_pairs
+ t(1) = norm(source_position-mics_position(pairs(k,1),:))/c;
+ t(2) = norm(source_position-mics_position(pairs(k,2),:))/c;
+ D = t(1) - t(2);
+ GRID(i,j,k) = round( D * fs );
+ end
+ end
+ end
+ 
+ end
+ */
+
+void createGrid (int room_length, int room_width, float cell_size, int * centroid_position_ROOM_FRAME, float * mics_position_CENTR_FRAME, int fs){
+    int a;
+}
+
+//----------- 3. Fill Grid
+/*
+ function [ xc ] = computeCorrelations( delayed_signals, pairs )
+ %UNTITLED8 Summary of this function goes here
+ %   Detailed explanation goes here
+ 
+ num_pairs = size(pairs,1);
+ xc = zeros(length(delayed_signals(1,:))*2-1,num_pairs);
+ 
+ for i = 1:num_pairs
+ [xc(:,i), ~] = xcorr(delayed_signals(pairs(i,1),:), delayed_signals(pairs(i,2),:));
+ end
+ 
+ end
+ 
+
+ */
+
+
+//----------- 4. Build Energy Map
+
+
+//----------- 5. Find maximum
+
+
+//----------- 6. Export result
+
+
 // ***
 // ************************************************************************************************************************
 
@@ -301,7 +425,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     }
     
     // Normalize resulting vector
-    float norm_v = sqrt(v[0]*v[0]+v[1]*v[1]);
+    float norm_v = sqrt( v[0] * v[0] + v[1] * v[1] );
     if (norm_v == 0) norm_v = 0.000000000000000000001;
     v[0] /= norm_v;
     v[1] /= norm_v;
@@ -322,8 +446,15 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     }
     //std::cout << "This is the angle =" <<val_angle<< std::endl;
     results->angle = val_angle ;
-
-    //std::cout << "\n val_angle = " << val_angle << std::endl ;
+    
+    /*
+     
+    float position[2];
+    // void calcPos ( int angle, int dist, float * pos){
+    calcPos( -45, 5, &position[0]);
+    std::cout << "\n x = " << position[0]<< " and y = "<<position[1]<< std::endl ;
+    
+     */
     
 // ***
 // ************************************************************************************************************************
@@ -331,7 +462,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     /*
   //  /!\ For testing purposes only /!\  Create a sine wave/ramp to send to gui.
   static float phase = 0 ;
-  //float val = 0.5 + 0.6 * sin(phase) ;
+  //float val = 0.5 + 0.6 * sin( phase ) ;
   phase += .05 ;
   if ( phase > PI )
     phase -= 2*PI ;
