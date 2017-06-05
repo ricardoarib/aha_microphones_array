@@ -39,10 +39,11 @@ class process : public audio_proc
   bool is_finished() { return processing_finished ;  } ;
   void set_samples_to_process( int count ) ;
   processed_data* get_result() ; // Do not forget to delete the data pointed to by the address returned after done using it.
- private:
+ private: // !!!
   void open_snd_file() ;
   void close_snd_file() ;
   void send_results( processed_data* d ) ;
+    void fill_grid();
 
 
   SNDFILE* infile ;
@@ -60,6 +61,14 @@ class process : public audio_proc
   bool processing_finished ;
 
   ringbuffer<void*> rb_results ;
+    
+#define ROOM_LENGTH 1
+#define ROOM_WIDTH 1
+#define CELL_SIZE 0.1
+#define NUM_MIC_PAIRS 4
+    
+    // Criar GRID
+    float grid [NUM_MIC_PAIRS][ (int) (ROOM_LENGTH / CELL_SIZE) ][ (int) (ROOM_WIDTH / CELL_SIZE) ];
 };
 
 

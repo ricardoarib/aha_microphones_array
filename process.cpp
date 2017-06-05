@@ -506,7 +506,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     processing_finished = true ;
     return ;
   }
-};
+}; // --- Fim da callback
 
 
 void process::set_sample_rate( float val ) { sample_rate = val ; } ;
@@ -516,8 +516,20 @@ void process::set_channels( int val ) { channels = val ; } ;
 
 void process::pre_start() {
   std::cout << "process::pre_start()" << std::endl ;
-  open_snd_file();
+    // inicializar GRID
+    fill_grid();
+    open_snd_file();
 } ;
+
+void process::fill_grid (){
+    for (int m = 0; m < NUM_MIC_PAIRS; m++){
+        for (int a = 0; a < (int)(ROOM_LENGTH/CELL_SIZE); a++) {
+            for (int b = 0; b < (int)(ROOM_WIDTH/CELL_SIZE); b++){
+                grid [m][a][b] = 0;
+            }
+        }
+    }
+}
 
 void process::post_stop() {
   std::cout << "process::post_stop()" << std::endl ;
