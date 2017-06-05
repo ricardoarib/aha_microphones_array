@@ -31,6 +31,7 @@ class process : public audio_proc
   void set_channels( int val ) ;
   void pre_start() ;
   void post_stop() ;
+    void set_room_dimensions(float length, float width, float cell_size) ;
 
 
   // optional

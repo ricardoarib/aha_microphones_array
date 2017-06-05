@@ -48,6 +48,8 @@ process::process( std::string fn, int count ) :
     cell_size = CELL_SIZE;
     room_length_n = (int)(ROOM_LENGTH/cell_size);
     room_width_n = (int)(ROOM_WIDTH/cell_size);
+    
+    set_room_dimensions(2.0, 2.0, 0.2);
 };
 
 
@@ -556,6 +558,12 @@ void process::fill_grid2() {
             }
         }
     }
+}
+
+void process::set_room_dimensions(float length, float width, float cell) {
+    cell_size = cell;
+    room_width_n = width / cell;
+    room_length_n = length / cell;
 }
 
 void process::post_stop() {
