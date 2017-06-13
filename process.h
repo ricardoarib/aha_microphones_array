@@ -32,6 +32,7 @@ class process : public audio_proc
   void pre_start() ;
   void post_stop() ;
     void set_room_dimensions(float length, float width, float cell_size) ;
+    void set_mics_centroid_position( float x, float y ) ; // (x,y) in meters
 
 
   // optional
@@ -45,7 +46,7 @@ class process : public audio_proc
   void close_snd_file() ;
   void send_results( processed_data* d ) ;
     void fill_grid();
-    void fill_grid2();
+    void fill_grid2(int Nfft);
 
 
   SNDFILE* infile ;
@@ -68,15 +69,17 @@ class process : public audio_proc
 #define ROOM_WIDTH 1
 #define CELL_SIZE 0.1
 #define NUM_MIC_PAIRS 4
+#define SOUND_SPEED 343.21
     
     int num_mic_pairs;
-    int room_width_n, room_length_n; // cells
-    float cell_size; // m / cell
+    int room_width_n, room_length_n; // [ cells ]
+    float cell_size; // [ m / cell ]
     
     // Criar GRID
     float grid [NUM_MIC_PAIRS][ (int) (ROOM_LENGTH / CELL_SIZE) ][ (int) (ROOM_WIDTH / CELL_SIZE) ];
     
-    float *** grid2; //3 dimentions
+    float *** grid2; // 3 dimentions
+    float c = 343.21;
     
     // Pseudo inverse
     float pinv[2][8] = {2.500000000000000, 1.767766952966369, 0.000000000000000, -1.767766952966368, -2.500000000000000, -1.767766952966369, -0.000000000000000, 1.767766952966368, -0.000000000000001, 1.767766952966370, 2.500000000000000, 1.767766952966369, 0.000000000000001, -1.767766952966369, -2.500000000000000, -1.767766952966369};
@@ -92,6 +95,12 @@ class process : public audio_proc
         {0, -0.1},
         {0.070710678118655, -0.070710678118655}
     };
+    
+    // Centroid coordinates
+    float centroid_x, centroid_y;
+    
+    // Mic pairs
+    int pairs[4][2]= {{0,4}, {1,5}, {2,6}, {3,7}};
 
 };
 

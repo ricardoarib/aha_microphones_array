@@ -163,13 +163,11 @@ void fft (int Nfft, float * signal, float * result_fft_RE, float * result_fft_IM
 
 }
 
-int xcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float * spec2_IM, int fs){
-    
+void xcCalculation (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float * spec2_IM, int fs, float* xc){
     kiss_fft_cfg i_cfg = kiss_fft_alloc( Nfft, 1, NULL, NULL);
     kiss_fft_cpx i_cx_in [Nfft];
     kiss_fft_cpx i_cx_out [Nfft];
     
-    float xc[Nfft];
     
     for (int i = 0; i<Nfft; i++){
         i_cx_in[i].r = (spec1_RE[i] * spec2_RE[i] + spec1_IM[i] * spec2_IM[i])/(sqrt( spec1_RE[i] * spec1_RE[i] + spec1_IM[i] * spec1_IM[i] ) * sqrt( spec2_RE[i] * spec2_RE[i] + spec2_IM[i] * spec2_IM[i] ));
@@ -184,14 +182,23 @@ int xcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float
         xc[i]  *= 1.0 / (float)Nfft ;
     }
     free(i_cfg);
+    
+}
 
-    int max_idx = 0;
-    
-    max_idx = findMaxIdx(&xc[0], Nfft);
-    
+int findDelay(int Nfft, float* xc){
+    int max_idx = findMaxIdx(&xc[0], Nfft);
     if (max_idx > Nfft/2) max_idx -= Nfft;
-        
     return max_idx;
+}
+
+int xcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float * spec2_IM, int fs){
+
+    float xc[Nfft];
+    xcCalculation ( Nfft, spec1_RE, spec1_IM, spec2_RE, spec2_IM, fs, xc) ;
+
+    int delay_of_max = findDelay( Nfft, xc) ;
+
+    return delay_of_max;
     
 }
 
@@ -550,7 +557,7 @@ void process::fill_grid (){
     }
 }
 
-void process::fill_grid2() {
+void process::fill_grid2(int Nfft) {
     for (int m = 0; m < num_mic_pairs; m++){
         for (int a = 0; a < room_length_n; a++) {
             for (int b = 0; b < room_width_n; b++){
