@@ -33,6 +33,9 @@ class process : public audio_proc
   void post_stop() ;
     void set_room_dimensions(float length, float width, float cell_size) ;
     void set_mics_centroid_position( float x, float y ) ; // (x,y) in meters
+    
+    int Nsamples;
+    int set_nsamples (int Nsamples);
 
 
   // optional
@@ -41,12 +44,19 @@ class process : public audio_proc
   bool is_finished() { return processing_finished ;  } ;
   void set_samples_to_process( int count ) ;
   processed_data* get_result() ; // Do not forget to delete the data pointed to by the address returned after done using it.
+    // Centroid coordinates
+    float centroid_x, centroid_y;
+    
+    
+    
  private: // !!!
   void open_snd_file() ;
   void close_snd_file() ;
   void send_results( processed_data* d ) ;
     void fill_grid();
-    void fill_grid2(int Nfft);
+    void fill_zeros_2d_grid (float ** grid, int dim1, int dim2);
+    void fill_grid2(int Nfft, float *** grid2);
+    void createEnergyMap ( int Nfft, float *** grid, float ** correl, float ** energy_map);
 
 
   SNDFILE* infile ;
@@ -71,7 +81,7 @@ class process : public audio_proc
 #define NUM_MIC_PAIRS 4
 #define SOUND_SPEED 343.21
     
-    int num_mic_pairs;
+    int num_mic_pairs = 4;
     int room_width_n, room_length_n; // [ cells ]
     float cell_size; // [ m / cell ]
     
@@ -80,6 +90,10 @@ class process : public audio_proc
     
     float *** grid2; // 3 dimentions
     float c = 343.21;
+    
+    float ** correl;
+    float ** energy_map;
+    
     
     // Pseudo inverse
     float pinv[2][8] = {2.500000000000000, 1.767766952966369, 0.000000000000000, -1.767766952966368, -2.500000000000000, -1.767766952966369, -0.000000000000000, 1.767766952966368, -0.000000000000001, 1.767766952966370, 2.500000000000000, 1.767766952966369, 0.000000000000001, -1.767766952966369, -2.500000000000000, -1.767766952966369};
@@ -96,8 +110,6 @@ class process : public audio_proc
         {0.070710678118655, -0.070710678118655}
     };
     
-    // Centroid coordinates
-    float centroid_x, centroid_y;
     
     // Mic pairs
     int pairs[4][2]= {{0,4}, {1,5}, {2,6}, {3,7}};

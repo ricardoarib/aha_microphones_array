@@ -7,20 +7,12 @@
 #include <iomanip>
 #include <fstream>
 
-
 using namespace std;
 
 #define RESULTS_RING_BUFFER_SIZE 1024*sizeof(void*)
 #define PI 3.14159265358979
 #define FS 48000
 #define max_mics_distance 0.2
-
-/*
-#define ROOM_LENGTH 1
-#define ROOM_WIDTH 1
-#define CELL_SIZE 0.1
-#define NUM_MIC_PAIRS 4
-*/
 
 process::process( std::string fn, int count ) :
   sample_rate( 1 ),
@@ -33,6 +25,7 @@ process::process( std::string fn, int count ) :
   limit_sample_number( false ),
   processing_finished( false ),
   rb_results( RESULTS_RING_BUFFER_SIZE )
+
 {
   set_samples_to_process( count ) ;
 
@@ -49,7 +42,9 @@ process::process( std::string fn, int count ) :
     room_length_n = (int)(ROOM_LENGTH/cell_size);
     room_width_n = (int)(ROOM_WIDTH/cell_size);
     
-    set_room_dimensions(2.0, 2.0, 0.2);
+    set_room_dimensions(2.0, 2.0, 0.2); // Length, width, cell size
+    set_mics_centroid_position(1.0, 1.0);
+    Nsamples = set_nsamples (1024);
 };
 
 
@@ -57,43 +52,7 @@ process::~process(){
   //delete [] levels ;
 };
 
-// ************************************************************************************************************************
-// ***
-
-
-
-//Erasable..........................................................................
-void createSinusoidSignal (int Npoints, float * buffer){
-    float rate, result;
-    
-    for (int i = 0; i<Npoints; i++){
-        rate = 10.0 * i;
-        result = cos (rate * PI/180);
-        buffer [i] = result;
-    }
-}
-//..................................................................................
-
-
-//Erasable..........................................................................
-void addDelayToSignal (int Npts, float * signal, float * delayed_signal, float delay, int fs){
-    int length = Npts;
-    int delay_samples = (int) delay/fs;
-    
-    if (delay > 0){
-        for (int i = 0; i<delay_samples; i++){
-            delayed_signal[i] = 0;
-        }
-        int a = 0;
-        for (int i = delay_samples; i<length; i++){
-            delayed_signal[i] = signal[a];
-            a++;
-        }
-    }else if(delay < 0){
-        // to do, if needed
-    }else return ;
-}
-//.................................................................................
+/* ****************************** Functions ************************************************************************************ */
 
 
 float abs (float value){
@@ -103,11 +62,9 @@ float abs (float value){
 
 int findMaxIdx (float * signal, int signal_length){
     
+    // Guarantee the value is feasible
     int margin = 5;
     int range = max_mics_distance/340*FS + margin;
-    
-    //std::cout << "Range: "<<range<< std::endl;
-    
     int max_idx = 0;
     
     for (int i = 0; i < range; i++){
@@ -127,7 +84,7 @@ int findMaxIdx (float * signal, int signal_length){
     return max_idx;
 }
 
-float finMaxVal (float * signal, int signal_length){
+float finMaxVal (float * signal, int signal_length){ // Array
     
     int max_idx;
     float max_val;
@@ -139,6 +96,25 @@ float finMaxVal (float * signal, int signal_length){
 
 }
 
+float findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
+    
+    int max_idx;
+    float max_val = 0;
+    
+    for (int i = 0; i < dim1; i++){
+        max_idx = findMaxIdx (&matrix[i][0], dim2);
+        if ( max_val < matrix[i][max_idx]){
+            max_val = matrix[i][max_idx];
+        }
+//        std::cout << "max_val inside loop: "<< max_val << std::endl;
+
+    }
+    
+    return max_val;
+    
+    //TODO: juntar condicao para que o valor do máximo escolhido seja o mais afastado
+    
+}
 
 void fft (int Nfft, float * signal, float * result_fft_RE, float * result_fft_IM){
  
@@ -185,13 +161,30 @@ void xcCalculation (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_
     
 }
 
+void obtainXc ( float * signal_1, float * signal_2, int Nfft, int fs, float * xc ){
+    // Sig 1
+    float result_1_fft_RE[Nfft];
+    float result_1_fft_IM[Nfft];
+    // Sig 2
+    float result_2_fft_RE[Nfft];
+    float result_2_fft_IM[Nfft];
+    
+    // FFT calculation
+    fft ( Nfft, signal_1, &result_1_fft_RE[0], &result_1_fft_IM[0]);
+    fft ( Nfft, signal_2, &result_2_fft_RE[0], &result_2_fft_IM[0]);
+    
+    // Cross-correlation calculation
+    xcCalculation ( Nfft, result_1_fft_RE, result_1_fft_IM, result_2_fft_RE, result_2_fft_IM, fs, xc);
+    
+}
+
 int findDelay(int Nfft, float* xc){
     int max_idx = findMaxIdx(&xc[0], Nfft);
     if (max_idx > Nfft/2) max_idx -= Nfft;
     return max_idx;
 }
 
-int xcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float * spec2_IM, int fs){
+int calcMaxXcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE, float * spec2_IM, int fs){
 
     float xc[Nfft];
     xcCalculation ( Nfft, spec1_RE, spec1_IM, spec2_RE, spec2_IM, fs, xc) ;
@@ -215,139 +208,18 @@ int delayCalculation (int Nfft, int fs, float * signal1, float * signal2){
     
     //Generalized cross-correlation
     int max_idx = 0;
-    max_idx = xcorr(Nfft, &result_fft_RE[0], &result_fft_IM[0], &result_fft2_RE[0], &result_fft2_IM[0], fs);
+    max_idx = calcMaxXcorr(Nfft, &result_fft_RE[0], &result_fft_IM[0], &result_fft2_RE[0], &result_fft2_IM[0], fs);
     
     return max_idx;
     
 }
-
-// Mics position
-
-/*
- function [ pos ] = calcPos( angle, dist )
- % Converts polar coordinates into cartesian
- 
- pos = dist * [ cos( angle * pi / 180)  sin( angle * pi /180 )];
- 
- end
- */
 
 void calcPos ( int angle, int dist, float * pos){
     pos[0] = dist * cos ( angle * PI /180 );
     pos[1] = dist * sin ( angle * PI /180 );
 }
 
-
-// SRP TOOLS
-
-//----------- 1. Pair Microphones
-
-/*
- num_mics = size(mics_position,1);
- num_pairs = floor(num_mics/2);
- dist_mtx = zeros (num_pairs, num_mics);
- taken = zeros (num_mics,1);
- pairs = zeros (num_pairs, 2);
- 
- for i = 1:num_pairs
- taken (i) = 1;
- for j = 1:num_mics
- dist_mtx(i,j) = norm(mics_position(i,:)-mics_position(j,:));
- end
- [~, I] = max(dist_mtx(i,:));
- while ismember(0,taken)
- if taken(I) == 0
- pairs(i,1) = i;
- pairs(i,2) = I;
- taken(I) = 1;
- break;
- else
- dist_mtx(i,I)=0;
- [~, I] = max(dist_mtx(i,:));
- end
- end
- end
- 
- pairs = pairs(all(pairs,2),:);
- */
-
-/*
-
-void pairMicrophones ( float * mic_pos, int num_mics, int * pair ){ // TODO
-    int num_pairs = (int) num_mics / 2;
-    
-    float dist_mtx[num_pairs][num_mics] = 0;
-}
- 
- */
-
-//----------- 2. Create Grid
-/*
- function [ GRID ] = createGrid( room_width, room_length, cell_size, pairs, mics_position, fs )
- %CreateGrid Divides the room in cells and estimates the theoretical delay
- %between pairs of microphones (in samples)
- %   The dimensions of the room and the size of the cell are provided so the
- %   program goes through all of them and stores the theoretical TDOA (in
- %   samples) for each pair of microphones
- 
- w = -room_width/2:cell_size:room_width/2; % rows = yy
- l = -room_length/2:cell_size:room_length/2; % columns = xx
- w = w* -1;
- num_pairs = size(pairs, 1);
- GRID = zeros ( length(w), length(l), num_pairs );
- t = zeros(1,2);
- c = 343.21; % Sound velocity in 20C air [ m/ s ]
- 
- for i = 1:length(w) % each line
- for j = 1:length(l) % each column
- source_position = [l(j) w(i)];
- for k = 1:num_pairs
- t(1) = norm(source_position-mics_position(pairs(k,1),:))/c;
- t(2) = norm(source_position-mics_position(pairs(k,2),:))/c;
- D = t(1) - t(2);
- GRID(i,j,k) = round( D * fs );
- end
- end
- end
- 
- end
- */
-
-void createGrid (int room_length, int room_width, float cell_size, int * centroid_position_ROOM_FRAME, float * mics_position_CENTR_FRAME, int fs){
-    int a;
-}
-
-//----------- 3. Fill Grid
-/*
- function [ xc ] = computeCorrelations( delayed_signals, pairs )
- %UNTITLED8 Summary of this function goes here
- %   Detailed explanation goes here
- 
- num_pairs = size(pairs,1);
- xc = zeros(length(delayed_signals(1,:))*2-1,num_pairs);
- 
- for i = 1:num_pairs
- [xc(:,i), ~] = xcorr(delayed_signals(pairs(i,1),:), delayed_signals(pairs(i,2),:));
- end
- 
- end
- 
-
- */
-
-
-//----------- 4. Build Energy Map
-
-
-//----------- 5. Find maximum
-
-
-//----------- 6. Export result
-
-
-// ***
-// ************************************************************************************************************************
-
+/* ----------------------------- Process functions ------------------------------------------------------------------------------*/
 
 void process::callback( float* buf, int Nch, int Nsamples ) {
 
@@ -463,6 +335,60 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
         if (v[1] >= 0) val_angle = PI - asin(v[1]);
         else val_angle = -PI - asin(v[1]);
     }
+    
+    
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //+++++++++++++++++++
+    
+    // SRP APPROACH
+    
+    // Calculate and store correlation per mic pair
+    int num_corr = num_mic_pairs;
+    //float correlation[num_corr][Nfft];
+    
+    //pairs[4][2]
+    
+    float xc[Nfft];
+    int mic_a, mic_b;
+    
+    for ( int i = 0; i < num_mic_pairs; i++){
+        mic_a = pairs[i][0];
+        mic_b = pairs[i][1];
+        
+        /*
+        std::cout << "Entrou aqui!! i=" << i<< std::endl;
+        std::cout << "mic a: "<< mic_a << std::endl;
+        std::cout << "mic b: "<< mic_b << std::endl;
+         */
+        
+        obtainXc ( &signals [mic_a][0], &signals [mic_b][0], Nfft, sample_rate, &xc[0] );
+        
+        *(correl[i]) = *xc;
+        //correlation[i][0] = xc[0];
+        /*
+        std::cout << "* correlation[i] = " << * correlation[i]<< std::endl;
+        std::cout << "correlation[0][0] = " << correlation[0][0]<< std::endl;
+        std::cout << "correlation[1][1] = " << correlation[1][1]<< std::endl;
+        std::cout << "correlation[2][0] = " << correlation[2][0]<< std::endl;
+        std::cout << "correlation[3][1] = " << correlation[3][1]<< std::endl;
+        std::cout << "correlation[4][1] = " << correlation[4][1]<< std::endl;
+         */
+
+    }
+    
+    createEnergyMap ( Nfft, grid2, correl, energy_map) ;
+    
+    float peak;
+    peak = findMaxVal_2D (energy_map, room_length_n, room_width_n);
+
+    
+   // std::cout << "peak: "<<peak<< std::endl;
+    
+    
+    //+++++++++++++++++++
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
+
     //std::cout << "This is the angle =" <<val_angle<< std::endl;
     results->angle = val_angle ;
     
@@ -527,17 +453,19 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
   }
 }; // --- Fim da callback
 
-
 void process::set_sample_rate( float val ) { sample_rate = val ; } ;
 
 void process::set_channels( int val ) { channels = val ; } ;
 
+int process::set_nsamples ( int Nsamples) { return Nsamples ; } ;
 
 void process::pre_start() {
   std::cout << "process::pre_start()" << std::endl ;
     // inicializar GRID
-    fill_grid();
+    //fill_grid();
     open_snd_file();
+    
+    // Initialize grid
     grid2 = new float ** [num_mic_pairs];
     for (int m = 0; m < num_mic_pairs; m++){
         grid2[m] = new float * [room_length_n];
@@ -545,6 +473,22 @@ void process::pre_start() {
             grid2[m][n] = new float [room_width_n];
         }
     }
+    
+    correl = new float * [num_mic_pairs];
+    for (int i = 0; i < num_mic_pairs; i++){
+        correl[i] = new float [Nsamples];
+    }
+    
+    energy_map = new float * [room_length_n];
+    for (int i = 0; i < room_length_n; i++){
+        energy_map[i] = new float [room_width_n];
+    }
+    
+    
+    // Fill grid
+    fill_zeros_2d_grid( correl, num_mic_pairs, Nsamples );
+    fill_zeros_2d_grid( energy_map, room_length_n, room_length_n );
+    fill_grid2 ( Nsamples, grid2 );
 } ;
 
 void process::fill_grid (){
@@ -557,11 +501,75 @@ void process::fill_grid (){
     }
 }
 
-void process::fill_grid2(int Nfft) {
+void process::fill_zeros_2d_grid (float ** grid, int dim1, int dim2){
+    for (int a = 0; a < dim1; a++) {
+        for (int b = 0; b < dim2; b++){
+            grid [a][b] = 0;
+        }
+    }
+}
+
+void process::fill_grid2 ( int Nfft, float *** grid2) {
     for (int m = 0; m < num_mic_pairs; m++){
+        // Select mics
+        int mic_a_idx = pairs[m][0];
+        int mic_b_idx = pairs[m][1];
+        
+        // Get mics' positions
+        float mic_a_x = mics[mic_a_idx][0] + centroid_x; // TODO: confirmar se centroid_x ou centroid_y /!\
+        float mic_a_y = mics[mic_a_idx][1] + centroid_y;
+        
+            //std::cout << "mic a = (" <<mic_a_x<<", "<< mic_a_y <<")" << std::endl ;
+        
+        float mic_b_x = mics[mic_b_idx][0] + centroid_x;
+        float mic_b_y = mics[mic_b_idx][1] + centroid_y;
+
+            //std::cout << "mic b = (" <<mic_b_x<<", "<< mic_b_y <<")" << std::endl ;
+
+        
         for (int a = 0; a < room_length_n; a++) {
             for (int b = 0; b < room_width_n; b++){
-                grid2 [m][a][b] = 0;
+                // Determine distance to every point in the grid to the centroid
+                float d_a = sqrt ( ( a * cell_size - mic_a_x ) * ( a * cell_size - mic_a_x ) + ( b * cell_size - mic_a_x ) * ( b * cell_size - mic_a_x ) ); // ERRO?! mic_a_x =/= mic_a_y
+                float d_b = sqrt ( ( a * cell_size - mic_b_x ) * ( a * cell_size - mic_b_x ) + ( b * cell_size - mic_b_y ) * ( b * cell_size - mic_b_y ) );
+                
+                /*
+                std::cout << "------------ for cell:" << ( room_length_n * a ) + b << std::endl ;
+                std::cout << "d_a: "<< d_a << std::endl ;
+                std::cout << "d_b: "<< d_b << std::endl ;
+                 */
+
+                
+                // Calculate the time of arrival
+                float ta_a = d_a / SOUND_SPEED;
+                float ta_b = d_b / SOUND_SPEED;
+                
+                // Get the Time Difference Of Arrival  (TDOA)
+                float tdoa_ab = ta_a - ta_b;
+                
+                // Fill the grid
+                grid2 [m][a][b] = tdoa_ab * sample_rate;
+                
+                //std::cout << "grid2["<<m<<"]["<<a<<"]["<<b<<"]: "<< (int) grid2 [m][a][b] << std::endl ;
+            }
+        }
+    }
+}
+
+void process::createEnergyMap ( int Nfft, float *** grid, float ** correl, float ** energy_map) {
+    
+    int idx;
+    
+    for (int a = 0; a < room_length_n; a++) {
+        for (int b = 0; b < room_width_n; b++){
+            for (int m = 0; m < num_mic_pairs; m++){
+                // Get idx
+                idx = grid[m][a][b];
+                
+                // Fill the grid
+                energy_map [a][b] = energy_map [a][b] + correl [m][idx];
+                
+                std::cout << "energy_map ["<<a<<"]["<<b<<"]: " <<energy_map [a][b]<< std::endl;
             }
         }
     }
@@ -571,6 +579,12 @@ void process::set_room_dimensions(float length, float width, float cell) {
     cell_size = cell;
     room_width_n = width / cell;
     room_length_n = length / cell;
+}
+
+void process::set_mics_centroid_position (float x, float y){
+    // (x,y) are in meters
+    centroid_x = x;
+    centroid_y = y;
 }
 
 void process::post_stop() {
@@ -584,9 +598,20 @@ void process::post_stop() {
         delete [] grid2[m];
     }
     delete [] grid2;
+    
+    //delete correl
+    for (int i = 0; i < num_mic_pairs; i++){
+        delete [] correl[i];
+    }
+    delete [] correl;
+    
+    //delete energy_map
+    for (int i = 0; i < room_length_n; i++){
+        delete [] energy_map[i];
+    }
+    delete [] energy_map;
+    
 } ;
-
-
 
 void process::open_snd_file() {
   SF_INFO info;
@@ -604,13 +629,11 @@ void process::open_snd_file() {
   }
 };
 
-
 void process::close_snd_file() {
   if ( sf_close( infile ) ) {
     std::cout << "Error closing sound file." << std::endl ;
   };
 } ;
-
 
 float process::get_level( int c) {
   if (!levels) return 0.0f ;
@@ -621,8 +644,6 @@ float process::get_level( int c) {
   return val ;
 };
 
-
-
 void process::set_samples_to_process( int count ){
   if ( count <= 0 ) {
     limit_sample_number = false ;
@@ -631,7 +652,6 @@ void process::set_samples_to_process( int count ){
     limit_sample_number = true ;
   }
 }
-
 
 void process::send_results( processed_data* d ){
 
@@ -645,7 +665,6 @@ void process::send_results( processed_data* d ){
 };
 
 
-
 processed_data* process::get_result() {
   if ( rb_results.available()  ) {
     processed_data* r ;
@@ -654,5 +673,3 @@ processed_data* process::get_result() {
   }
   return 0;
 };
-
-
