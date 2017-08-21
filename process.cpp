@@ -42,7 +42,7 @@ process::process( std::string fn, int count ) :
     room_length_n = (int)(ROOM_LENGTH/cell_size);
     room_width_n = (int)(ROOM_WIDTH/cell_size);
     
-    set_room_dimensions(2.0, 2.0, 0.2); // Length, width, cell size
+    set_room_dimensions(2.0, 2.0, 0.02); // Length, width, cell size
     set_mics_centroid_position(1.0, 1.0);
     Nsamples = set_nsamples (1024);
 };
@@ -58,6 +58,15 @@ process::~process(){
 float abs (float value){
     value = sqrt(value * value);
     return value;
+}
+
+float calcDistanceBetweenPoint (float a_x, float a_y, float b_x, float b_y){
+    
+    float d;
+    
+    d = sqrt ( ( a_x - b_x ) * ( a_x - b_x ) + ( a_y - b_y ) * ( a_y - b_y ) );
+    
+    return d;
 }
 
 int findMaxIdx (float * signal, int signal_length){
@@ -84,6 +93,20 @@ int findMaxIdx (float * signal, int signal_length){
     return max_idx;
 }
 
+int findMaxIdxArray (float * signal, int signal_length){
+    
+    int max_idx = 0;
+    
+    for (int i = 0; i < signal_length; i++){
+        
+        if (signal[max_idx] < signal[i]){
+            max_idx = i;
+        }
+        
+    }
+    return max_idx;
+}
+
 float finMaxVal (float * signal, int signal_length){ // Array
     
     int max_idx;
@@ -94,26 +117,6 @@ float finMaxVal (float * signal, int signal_length){ // Array
     
     return max_val;
 
-}
-
-float findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
-    
-    int max_idx;
-    float max_val = 0;
-    
-    for (int i = 0; i < dim1; i++){
-        max_idx = findMaxIdx (&matrix[i][0], dim2);
-        if ( max_val < matrix[i][max_idx]){
-            max_val = matrix[i][max_idx];
-        }
-//        std::cout << "max_val inside loop: "<< max_val << std::endl;
-
-    }
-    
-    return max_val;
-    
-    //TODO: juntar condicao para que o valor do máximo escolhido seja o mais afastado
-    
 }
 
 void fft (int Nfft, float * signal, float * result_fft_RE, float * result_fft_IM){
@@ -569,7 +572,7 @@ void process::createEnergyMap ( int Nfft, float *** grid, float ** correl, float
                 // Fill the grid
                 energy_map [a][b] = energy_map [a][b] + correl [m][idx];
                 
-                std::cout << "energy_map ["<<a<<"]["<<b<<"]: " <<energy_map [a][b]<< std::endl;
+                //std::cout << "energy_map ["<<a<<"]["<<b<<"]: " <<energy_map [a][b]<< std::endl;
             }
         }
     }
@@ -611,6 +614,14 @@ void process::post_stop() {
     }
     delete [] energy_map;
     
+    /*
+    std::cout << "Experiencia"<< std::endl;
+    std::cout << "p1=(-2,0), p2=(0,0)"<< std::endl;
+    float d;
+    d = calcDistanceBetweenPoint(-2,0,0,0);
+    std::cout << "distancia entre p1 e p2: "<<d<< std::endl;
+    */
+    
 } ;
 
 void process::open_snd_file() {
@@ -651,7 +662,7 @@ void process::set_samples_to_process( int count ){
     sample_limit_number = count ;
     limit_sample_number = true ;
   }
-}
+};
 
 void process::send_results( processed_data* d ){
 
@@ -662,6 +673,56 @@ void process::send_results( processed_data* d ){
     delete d;
   }
 
+};
+
+float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
+    
+    int max_idx;
+    float max_val = 0;
+    int max_coordinate_x = 0;
+    int max_coordinate_y = 0;
+    float distante_to_centroid = 0;
+    float tmp_dist = 0;
+    
+    for (int i = 0; i < dim1; i++){
+        
+        max_idx = findMaxIdxArray (&matrix[i][0], dim2);
+        //std::cout << "max_idx: "<< max_idx<<std::endl;
+        
+        if ( max_val < matrix[i][max_idx] ){
+            
+            max_val = matrix[i][max_idx];
+            
+            max_coordinate_x = i;
+            max_coordinate_y = max_idx;
+            
+        }else{
+            if( max_val = matrix[i][max_idx] ){
+                //compute distance to centroid
+                distante_to_centroid = calcDistanceBetweenPoint (max_coordinate_x, max_coordinate_y, centroid_x, centroid_y);
+                tmp_dist = calcDistanceBetweenPoint (i, max_idx, centroid_x, centroid_y);
+                
+                //condition: choose the one which is further away from the centroid
+                if (distante_to_centroid < tmp_dist){
+                    distante_to_centroid = tmp_dist;
+                    max_coordinate_x = i;
+                    max_coordinate_y = max_idx;
+                }
+            }
+        }
+    }
+    if (max_val>5){
+        std::cout << "max_val inside loop: "<< max_val << std::endl;
+        std::cout << "max coordinate x inside loop: "<< max_coordinate_x << std::endl;
+        std::cout << "max coordinate y inside loop: "<< max_coordinate_y << std::endl;
+    }else{
+        std::cout << "max_val is small: "<< max_val<< std::endl;
+    }
+    
+    return max_val;
+    
+    //TODO: juntar condicao para que o valor do máximo escolhido seja o mais afastado
+    
 };
 
 

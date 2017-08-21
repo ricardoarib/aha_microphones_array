@@ -36,6 +36,7 @@ class process : public audio_proc
     
     int Nsamples;
     int set_nsamples (int Nsamples);
+    float findMaxVal_2D (float ** matrix, int dim1, int dim2);
 
 
   // optional
