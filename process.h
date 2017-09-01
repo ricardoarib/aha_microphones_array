@@ -56,8 +56,11 @@ class process : public audio_proc
   void send_results( processed_data* d ) ;
     void fill_grid();
     void fill_zeros_2d_grid (float ** grid, int dim1, int dim2);
-    void fill_grid2(int Nfft, float *** grid2);
-    void createEnergyMap ( int Nfft, float *** grid, float ** correl, float ** energy_map);
+    void fill_grid2(int Nfft, int *** grid2);
+    void createEnergyMap ( int Nfft, int *** grid, float ** correl, float ** energy_map);
+    void setToZeroImpossibleLocations (float ** energy_map);
+    float getAngle ( float x, float y);
+
 
 
   SNDFILE* infile ;
@@ -89,7 +92,7 @@ class process : public audio_proc
     // Criar GRID
     float grid [NUM_MIC_PAIRS][ (int) (ROOM_LENGTH / CELL_SIZE) ][ (int) (ROOM_WIDTH / CELL_SIZE) ];
     
-    float *** grid2; // 3 dimentions
+    int *** grid2; // 3 dimentions
     float c = 343.21;
     
     float ** correl;

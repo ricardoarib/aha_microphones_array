@@ -42,8 +42,8 @@ process::process( std::string fn, int count ) :
     room_length_n = (int)(ROOM_LENGTH/cell_size);
     room_width_n = (int)(ROOM_WIDTH/cell_size);
     
-    set_room_dimensions(2.0, 2.0, 0.02); // Length, width, cell size
-    set_mics_centroid_position(1.0, 1.0);
+    set_room_dimensions(30, 30, 1); // Length, width, cell size
+    set_mics_centroid_position(15.0, 15.0);
     Nsamples = set_nsamples (1024);
 };
 
@@ -101,6 +101,9 @@ int findMaxIdxArray (float * signal, int signal_length){
         
         if (signal[max_idx] < signal[i]){
             max_idx = i;
+        }
+        else if ( (signal[max_idx] == signal[i]) ) {
+            std::cout << "WE ARE EQUAL!"<< std::endl;
         }
         
     }
@@ -178,6 +181,11 @@ void obtainXc ( float * signal_1, float * signal_2, int Nfft, int fs, float * xc
     
     // Cross-correlation calculation
     xcCalculation ( Nfft, result_1_fft_RE, result_1_fft_IM, result_2_fft_RE, result_2_fft_IM, fs, xc);
+    
+    /*
+    for (int i = 0; i<Nfft; i++){
+        std::cout << "xc["<<i<<"]: "<<xc[i]<< std::endl;
+    }*/
     
 }
 
@@ -266,6 +274,8 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     int number_mics = 8;
     float signals [number_mics][Nsamples];
     int Nfft = Nsamples;
+    //std::cout <<"NFFT geo approach: "<< Nfft<< std::endl;
+
     
     for (int channel = 0; channel < number_mics; channel++){
         //std::cout << "Signal #"<<channel<< std::endl;
@@ -283,6 +293,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     for (int i = 0; i<number_mics; i++){
         delays [i] = delayCalculation (Nfft, FS, &signals[ref_channel][0], &signals[i][0]);
         //delays[i] /= FS; // Nao funciona porque?? FS muito grande? passar para double?
+        //std::cout << "delay ["<<i<<"] = "<< delays[i]<< std::endl;
         med_delay += delays[i];
     }
     med_delay = med_delay / Nch;
@@ -311,7 +322,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     float v[2];
     
-    //std::cout << std::setprecision(15) << std::fixed;
+    std::cout << std::setprecision(15) << std::fixed;
     
     for (int i = 0; i<number_mics; i++){
         v[0] += pinv[0][i] * (float)delays[i];
@@ -359,33 +370,78 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
         mic_b = pairs[i][1];
         
         /*
-        std::cout << "Entrou aqui!! i=" << i<< std::endl;
-        std::cout << "mic a: "<< mic_a << std::endl;
-        std::cout << "mic b: "<< mic_b << std::endl;
+         std::cout << "Entrou aqui!! i=" << i<< std::endl;
+         std::cout << "mic a: "<< mic_a << std::endl;
+         std::cout << "mic b: "<< mic_b << std::endl;
          */
+        
+        //std::cout <<"NFFT srp approach 1: "<< Nfft<< std::endl;
         
         obtainXc ( &signals [mic_a][0], &signals [mic_b][0], Nfft, sample_rate, &xc[0] );
         
-        *(correl[i]) = *xc;
+        /*
+         int d = findDelay( Nfft, xc) ;
+         std::cout <<"delay from mic " <<mic_a<<" to mic "<<mic_b<<": "<< d<< std::endl;
+         */
+        
+        for (int j = 0; j < Nsamples; j++){
+            correl[i][j] = xc[j];
+        }
+        
+        //int d = findDelay( Nfft, correl[i]) ;
+        //std::cout <<"delay from mic " <<mic_a<<" to mic "<<mic_b<<": "<< d<< std::endl;
+        
+        
+        //std::cout <<"NFFT srp approach 2: "<< Nfft<< std::endl;
+        
+        
+        /*
+         for (int a = 0; a < num_mic_pairs; a++){
+         std::cout << "-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-:-"<< std::endl;
+         for (int b = 0; b < Nsamples; b++){
+         std::cout << "correl["<<a<<"]["<<b<<"]: "<< correl[a][b]<< std::endl;
+         }
+         }
+         */
+        
         //correlation[i][0] = xc[0];
         /*
-        std::cout << "* correlation[i] = " << * correlation[i]<< std::endl;
-        std::cout << "correlation[0][0] = " << correlation[0][0]<< std::endl;
-        std::cout << "correlation[1][1] = " << correlation[1][1]<< std::endl;
-        std::cout << "correlation[2][0] = " << correlation[2][0]<< std::endl;
-        std::cout << "correlation[3][1] = " << correlation[3][1]<< std::endl;
-        std::cout << "correlation[4][1] = " << correlation[4][1]<< std::endl;
+         std::cout << "* correlation[i] = " << * correlation[i]<< std::endl;
+         std::cout << "correlation[0][0] = " << correlation[0][0]<< std::endl;
+         std::cout << "correlation[1][1] = " << correlation[1][1]<< std::endl;
+         std::cout << "correlation[2][0] = " << correlation[2][0]<< std::endl;
+         std::cout << "correlation[3][1] = " << correlation[3][1]<< std::endl;
+         std::cout << "correlation[4][1] = " << correlation[4][1]<< std::endl;
          */
-
+        
     }
+    
+    
     
     createEnergyMap ( Nfft, grid2, correl, energy_map) ;
     
+    for (int a = 0; a < room_length_n; a++){
+        for (int b = 0; b < room_width_n; b++){
+            std::cout << "energy_map["<<a<<"]["<<b<<"]: "<< energy_map[a][b]<<std::endl;
+            
+        }
+    }
+    
+    
+    
+    
+    /*
+    for (int m = 0; m < num_mic_pairs; m++){
+        for (int a = 0; a < room_length_n; a++){
+            for (int b = 0; b < room_width_n; b++){
+                std::cout << "grid teorica["<<m<<"]["<<a<<"]["<<b<<"]: "<< grid2[m][a][b]<<std::endl;
+            }
+        }
+    }
+*/
+    
     float peak;
     peak = findMaxVal_2D (energy_map, room_length_n, room_width_n);
-
-    
-   // std::cout << "peak: "<<peak<< std::endl;
     
     
     //+++++++++++++++++++
@@ -469,13 +525,22 @@ void process::pre_start() {
     open_snd_file();
     
     // Initialize grid
-    grid2 = new float ** [num_mic_pairs];
+//    grid2 = new float ** [num_mic_pairs];
+//    for (int m = 0; m < num_mic_pairs; m++){
+//        grid2[m] = new float * [room_length_n];
+//        for (int n = 0; n < room_length_n; n++){
+//            grid2[m][n] = new float [room_width_n];
+//        }
+//    }
+
+    grid2 = new int ** [num_mic_pairs];
     for (int m = 0; m < num_mic_pairs; m++){
-        grid2[m] = new float * [room_length_n];
+        grid2[m] = new int * [room_length_n];
         for (int n = 0; n < room_length_n; n++){
-            grid2[m][n] = new float [room_width_n];
+            grid2[m][n] = new int [room_width_n];
         }
     }
+    
     
     correl = new float * [num_mic_pairs];
     for (int i = 0; i < num_mic_pairs; i++){
@@ -512,46 +577,67 @@ void process::fill_zeros_2d_grid (float ** grid, int dim1, int dim2){
     }
 }
 
-void process::fill_grid2 ( int Nfft, float *** grid2) {
+void process::fill_grid2 ( int Nfft, int *** grid2) {
     for (int m = 0; m < num_mic_pairs; m++){
         // Select mics
         int mic_a_idx = pairs[m][0];
         int mic_b_idx = pairs[m][1];
         
+        
         // Get mics' positions
         float mic_a_x = mics[mic_a_idx][0] + centroid_x; // TODO: confirmar se centroid_x ou centroid_y /!\
         float mic_a_y = mics[mic_a_idx][1] + centroid_y;
         
-            //std::cout << "mic a = (" <<mic_a_x<<", "<< mic_a_y <<")" << std::endl ;
+        
+        //std::cout<< "CENTROID (X,Y): ("<<centroid_x<<", "<<centroid_y<<")"<<std::endl;
+        
+//        std::cout << "mics A["<<mic_a_idx<<"][0] = "<< mics[mic_a_idx][0] << std::endl ;
+//        std::cout << "mics A["<<mic_a_idx<<"][1] = "<< mics[mic_a_idx][1] << std::endl ;
+        
+        
+           // std::cout << "mic a = (" <<mics[mic_a_idx][0] + centroid_x<<", "<< mics[mic_a_idx][1] + centroid_y <<")" << std::endl ;
         
         float mic_b_x = mics[mic_b_idx][0] + centroid_x;
         float mic_b_y = mics[mic_b_idx][1] + centroid_y;
 
-            //std::cout << "mic b = (" <<mic_b_x<<", "<< mic_b_y <<")" << std::endl ;
+            //std::cout << "mic b = (" <<mic_b_x<<", "<< mics[mic_b_idx][1] + centroid_y <<")" << std::endl ;
+//        std::cout << "mics B["<<mic_b_idx<<"][0] = "<< mics[mic_b_idx][0] << std::endl ;
+//        std::cout << "mics B["<<mic_b_idx<<"][1] = "<< mics[mic_b_idx][1] << std::endl ;
 
+        
         
         for (int a = 0; a < room_length_n; a++) {
             for (int b = 0; b < room_width_n; b++){
                 // Determine distance to every point in the grid to the centroid
-                float d_a = sqrt ( ( a * cell_size - mic_a_x ) * ( a * cell_size - mic_a_x ) + ( b * cell_size - mic_a_x ) * ( b * cell_size - mic_a_x ) ); // ERRO?! mic_a_x =/= mic_a_y
+                float d_a = sqrt ( ( a * cell_size - mic_a_x ) * ( a * cell_size - mic_a_x ) + ( b * cell_size - (mics[mic_a_idx][1] + centroid_y) ) * ( b * cell_size - (mics[mic_a_idx][1] + centroid_y) ) ); // ERRO?! mic_a_x =/= mic_a_y
+//                std::cout << "(L,W): ("<<a * cell_size<<", b * cell_size"<<  <<" and mic a (x,y)"
+                
                 float d_b = sqrt ( ( a * cell_size - mic_b_x ) * ( a * cell_size - mic_b_x ) + ( b * cell_size - mic_b_y ) * ( b * cell_size - mic_b_y ) );
                 
                 /*
-                std::cout << "------------ for cell:" << ( room_length_n * a ) + b << std::endl ;
+                std::cout << "------------ for cell:" << a<<b<< std::endl ;
                 std::cout << "d_a: "<< d_a << std::endl ;
                 std::cout << "d_b: "<< d_b << std::endl ;
-                 */
+                */
 
                 
                 // Calculate the time of arrival
-                float ta_a = d_a / SOUND_SPEED;
-                float ta_b = d_b / SOUND_SPEED;
+//                float ta_a = d_a; // / SOUND_SPEED;
+//                float ta_b = d_b; // / SOUND_SPEED;
+                
+                /*
+                std::cout << "------------ for cell:" << a<<b<< std::endl ;
+                std::cout << "ta_a: "<< ta_a << std::endl ;
+                std::cout << "ta_b: "<< ta_b << std::endl ;
+                */
                 
                 // Get the Time Difference Of Arrival  (TDOA)
-                float tdoa_ab = ta_a - ta_b;
+                double tdoa_ab = (d_a - d_b) / SOUND_SPEED;
+                
+                //std::cout << "tdoa_ab * sample rate ["<<a<<"]["<<b<<"]: "<< (int)(tdoa_ab *sample_rate) << std::endl ;
                 
                 // Fill the grid
-                grid2 [m][a][b] = tdoa_ab * sample_rate;
+                grid2 [m][a][b] = (int) (tdoa_ab * sample_rate);
                 
                 //std::cout << "grid2["<<m<<"]["<<a<<"]["<<b<<"]: "<< (int) grid2 [m][a][b] << std::endl ;
             }
@@ -559,7 +645,7 @@ void process::fill_grid2 ( int Nfft, float *** grid2) {
     }
 }
 
-void process::createEnergyMap ( int Nfft, float *** grid, float ** correl, float ** energy_map) {
+void process::createEnergyMap ( int Nfft, int *** grid, float ** correl, float ** energy_map) {
     
     int idx;
     
@@ -571,9 +657,21 @@ void process::createEnergyMap ( int Nfft, float *** grid, float ** correl, float
                 
                 // Fill the grid
                 energy_map [a][b] = energy_map [a][b] + correl [m][idx];
-                
-                //std::cout << "energy_map ["<<a<<"]["<<b<<"]: " <<energy_map [a][b]<< std::endl;
             }
+            //std::cout << "energy_map ["<<a<<"]["<<b<<"]: " <<energy_map [a][b]<< std::endl;
+
+        }
+    }
+    
+    setToZeroImpossibleLocations ( energy_map ); // TODO: melhorar! escolher ponto mais longe ao longo da linha (nao apenas da coluna)
+}
+
+void process::setToZeroImpossibleLocations (float ** energy_map){
+    int d = 0;
+    for (int a = 0; a < room_length_n; a++){
+        for (int b = 0; b < room_width_n; b++){
+            d = calcDistanceBetweenPoint( a * cell_size, b * cell_size, centroid_x, centroid_y);
+            if ( d <= max_mics_distance/2) energy_map[a][b] = 0;
         }
     }
 }
@@ -601,6 +699,7 @@ void process::post_stop() {
         delete [] grid2[m];
     }
     delete [] grid2;
+    
     
     //delete correl
     for (int i = 0; i < num_mic_pairs; i++){
@@ -678,29 +777,56 @@ void process::send_results( processed_data* d ){
 float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
     
     int max_idx;
-    float max_val = 0;
+    float max_val = 0, max_tmp = 0;
     int max_coordinate_x = 0;
     int max_coordinate_y = 0;
     float distante_to_centroid = 0;
     float tmp_dist = 0;
     
+    
     for (int i = 0; i < dim1; i++){
         
         max_idx = findMaxIdxArray (&matrix[i][0], dim2);
-        //std::cout << "max_idx: "<< max_idx<<std::endl;
+        max_tmp = matrix[i][max_idx];
         
-        if ( max_val < matrix[i][max_idx] ){
+        std::cout << "...............................................max_idx["<<i<<"]: "<< max_idx<<std::endl;
+//        std::cout << "pt1 = (i, max_idx): ("<<i<<", "<<max_idx<<")"<<std::endl;
+//        std::cout << "pt2 = (x, y): ("<<centroid_x<<", "<<centroid_y<<")"<<std::endl;
+//        std::cout << "pt3 = (x, y): ("<<centroid_x/cell_size<<", "<<centroid_y/cell_size<<")"<<std::endl;
+        
+        tmp_dist = calcDistanceBetweenPoint (i, max_idx, centroid_x / cell_size, centroid_y / cell_size);
+        
+        
+//        int t = calcDistanceBetweenPoint(i,max_idx, centroid_x / cell_size, centroid_y / cell_size);
+//        std::cout << "temp_dist (sem /cell_size): "<< tmp_dist<< std::endl;
+//        std::cout << "temp_dist (com /cell_size): "<< t<< std::endl;
+        
+        
+//        std::cout << "max_val: "<< max_val<< std::endl;
+//        std::cout << "max_temp ["<<i<<"]["<<max_idx<<"]: "<< matrix[i][max_idx]<< std::endl;
+
+        
+        if ( max_val < max_tmp ){ // if a bigger value outside de mic array is found
+            //std::cout<<"ENTROU"<<std::endl;
             
-            max_val = matrix[i][max_idx];
+            max_val = max_tmp; //update max value
             
-            max_coordinate_x = i;
+            max_coordinate_x = i; //update coordinates of max value
             max_coordinate_y = max_idx;
             
-        }else{
-            if( max_val = matrix[i][max_idx] ){
+            distante_to_centroid = calcDistanceBetweenPoint (i, max_idx, centroid_x / cell_size, centroid_y / cell_size);
+
+            
+        }else{ //
+            if( max_val == max_tmp ){
+                //std::cout << "Entrada inesperada!"<<std::endl;
+                
                 //compute distance to centroid
-                distante_to_centroid = calcDistanceBetweenPoint (max_coordinate_x, max_coordinate_y, centroid_x, centroid_y);
-                tmp_dist = calcDistanceBetweenPoint (i, max_idx, centroid_x, centroid_y);
+                //distante_to_centroid = calcDistanceBetweenPoint (max_coordinate_x, max_coordinate_y, centroid_x, centroid_y);
+                //tmp_dist = calcDistanceBetweenPoint (i, max_idx, centroid_x, centroid_y);
+                
+                //std::cout << "dist_to_centroid: "<< distante_to_centroid<< std::endl;
+                
                 
                 //condition: choose the one which is further away from the centroid
                 if (distante_to_centroid < tmp_dist){
@@ -711,19 +837,75 @@ float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
             }
         }
     }
-    if (max_val>5){
-        std::cout << "max_val inside loop: "<< max_val << std::endl;
-        std::cout << "max coordinate x inside loop: "<< max_coordinate_x << std::endl;
-        std::cout << "max coordinate y inside loop: "<< max_coordinate_y << std::endl;
+    
+    /*
+    //normalization
+    for (int i = 0; i < dim1; i++){
+        for (int j = 0; j < dim2; j++){
+            matrix[i][j] = matrix[i][j] / max_val;
+        }
+    }
+    */
+     
+    float sol = 0.0;
+    sol = getAngle (max_coordinate_x, max_coordinate_y);
+    
+    std::cout << "max coordinates (x,y): ("<< max_coordinate_x <<", "<<max_coordinate_y<<")"<< std::endl;
+
+    std::cout << "SRP solution: "<< sol << " degrees"<< std::endl;
+    
+    /*
+    
+    if(1){ //(max_val>5){
+        //std::cout << "max_val inside loop: "<< max_val << std::endl;
+        std::cout << "max coordinates (x,y): ("<< max_coordinate_x <<", "<<max_coordinate_y<<")"<< std::endl;
+        //std::cout << "max coordinate y inside loop: "<< max_coordinate_y << std::endl;
     }else{
         std::cout << "max_val is small: "<< max_val<< std::endl;
     }
+    
+     */
     
     return max_val;
     
     //TODO: juntar condicao para que o valor do máximo escolhido seja o mais afastado
     
 };
+
+float process::getAngle ( float x, float y){
+    
+    std::cout << "x antes: " << x << std::endl;
+    std::cout << "y antes: " << y << std::endl;
+    
+    x = x * cell_size - centroid_x;
+    y = y * cell_size - centroid_y;
+    
+    
+    
+    // Normalization
+    float norm = sqrt( x * x + y * y );
+    if (norm == 0) norm = 0.000000000000000000001;
+    x /= norm;
+    y /= norm;
+    
+    std::cout << "x depois de normalizado: " << x << std::endl;
+    std::cout << "y depois de normalizado: " << y << std::endl;
+    
+    // Get angle
+    float val_angle = 0;
+    if ( x >= 0){ // the vector v is already normalized
+        val_angle = asin(y);
+    }else{
+        if (y >= 0) val_angle = PI - asin(y);
+        else val_angle = -PI - asin(y);
+    }
+    
+    //in degrees:
+    val_angle = val_angle * 180 / PI;
+    
+    return val_angle;
+}
+
 
 
 processed_data* process::get_result() {
