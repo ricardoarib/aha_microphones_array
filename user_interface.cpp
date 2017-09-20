@@ -118,10 +118,19 @@ int user_interface::go() {
     }
     if ( results ) {
       for (int i=0; i<results->Nspec; i++){
-	print_vertical_bar_dB( results->spec[i] ) ;
+          print_vertical_bar_dB( results->spec[i] ) ;
       }
-      print_needle( results->angle / (2*PI) + 0.5 , 20 ) ;
-      std::cout << std::setw(6) << results->angle * 180.0/PI << "\u00B0" ;
+      std::cout << " GEO: ";
+      print_needle( results->angle_geo / (2*PI) + 0.5 , 20 ) ;
+        std::cout << std::setw(6) << results->angle_geo * 180.0/PI ; //<< "\u00B0" ;
+        
+        
+        
+        std::cout << " SRP: ";
+        print_needle( results->angle_srp / (2*PI) + 0.5 , 20 ) ;
+        std::cout << std::setw(6) << results->angle_srp * 180.0/PI; // << "\u00B0" ;
+        
+        std::cout << "\u00B0" ;
     }
     delete results ;
 

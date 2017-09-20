@@ -103,7 +103,7 @@ int findMaxIdxArray (float * signal, int signal_length){
             max_idx = i;
         }
         else if ( (signal[max_idx] == signal[i]) ) {
-            std::cout << "WE ARE EQUAL!"<< std::endl;
+          //  std::cout << "WE ARE EQUAL!"<< std::endl;
         }
         
     }
@@ -420,12 +420,12 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     createEnergyMap ( Nfft, grid2, correl, energy_map) ;
     
-    for (int a = 0; a < room_length_n; a++){
+    /*for (int a = 0; a < room_length_n; a++){
         for (int b = 0; b < room_width_n; b++){
             std::cout << "energy_map["<<a<<"]["<<b<<"]: "<< energy_map[a][b]<<std::endl;
             
         }
-    }
+    }*/
     
     
     
@@ -440,8 +440,9 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     }
 */
     
-    float peak;
-    peak = findMaxVal_2D (energy_map, room_length_n, room_width_n);
+    float peak, angle_srp;
+    //peak = findMaxVal_2D (energy_map, room_length_n, room_width_n);
+    angle_srp = findMaxVal_2D (energy_map, room_length_n, room_width_n);
     
     
     //+++++++++++++++++++
@@ -449,7 +450,13 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
 
     //std::cout << "This is the angle =" <<val_angle<< std::endl;
-    results->angle = val_angle ;
+    
+    
+    results->angle_geo = val_angle ;
+    results->angle_srp = angle_srp * PI / 180;
+    
+    //std::cout << "This is the angle (callback) =" << results->angle << std::endl;
+    
     
     /*
      
@@ -789,7 +796,7 @@ float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
         max_idx = findMaxIdxArray (&matrix[i][0], dim2);
         max_tmp = matrix[i][max_idx];
         
-        std::cout << "...............................................max_idx["<<i<<"]: "<< max_idx<<std::endl;
+  //      std::cout << "...............................................max_idx["<<i<<"]: "<< max_idx<<std::endl;
 //        std::cout << "pt1 = (i, max_idx): ("<<i<<", "<<max_idx<<")"<<std::endl;
 //        std::cout << "pt2 = (x, y): ("<<centroid_x<<", "<<centroid_y<<")"<<std::endl;
 //        std::cout << "pt3 = (x, y): ("<<centroid_x/cell_size<<", "<<centroid_y/cell_size<<")"<<std::endl;
@@ -847,12 +854,12 @@ float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
     }
     */
      
-    float sol = 0.0;
-    sol = getAngle (max_coordinate_x, max_coordinate_y);
+    float sol_angle = 0.0;
+    sol_angle = getAngle (max_coordinate_x, max_coordinate_y);
     
-    std::cout << "max coordinates (x,y): ("<< max_coordinate_x <<", "<<max_coordinate_y<<")"<< std::endl;
+   // std::cout << "max coordinates (x,y): ("<< max_coordinate_x <<", "<<max_coordinate_y<<")"<< std::endl;
 
-    std::cout << "SRP solution: "<< sol << " degrees"<< std::endl;
+    std::cout << "SRP solution: "<< sol_angle << " degrees"<< std::endl;
     
     /*
     
@@ -866,7 +873,7 @@ float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
     
      */
     
-    return max_val;
+    return sol_angle;
     
     //TODO: juntar condicao para que o valor do máximo escolhido seja o mais afastado
     
@@ -874,8 +881,8 @@ float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
 
 float process::getAngle ( float x, float y){
     
-    std::cout << "x antes: " << x << std::endl;
-    std::cout << "y antes: " << y << std::endl;
+   // std::cout << "x antes: " << x << std::endl;
+   // std::cout << "y antes: " << y << std::endl;
     
     x = x * cell_size - centroid_x;
     y = y * cell_size - centroid_y;
@@ -888,8 +895,9 @@ float process::getAngle ( float x, float y){
     x /= norm;
     y /= norm;
     
-    std::cout << "x depois de normalizado: " << x << std::endl;
-    std::cout << "y depois de normalizado: " << y << std::endl;
+  //  std::cout << "x depois de normalizado: " << x << std::endl;
+  //  std::cout << "y depois de normalizado: " << y << std::endl;
+    std::cout << "(x,y) depois de normalizado: " <<"("<< x<<", "<<y <<")"<< std::endl;
     
     // Get angle
     float val_angle = 0;
