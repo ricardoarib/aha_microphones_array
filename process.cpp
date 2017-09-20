@@ -54,6 +54,17 @@ process::~process(){
 
 /* ****************************** Functions ************************************************************************************ */
 
+void writeToMatFile ( float ** map, int dim1, int dim2, char * fn ){
+    std::ofstream myfile;
+    myfile.open (fn);
+    for (int i = 0; i < dim1; i++){
+        for ( int j = 0; j < dim2; j++){
+            myfile << map[i][j]<<" ";
+        }
+        myfile << "\n";
+    }
+    myfile.close();
+}
 
 float abs (float value){
     value = sqrt(value * value);
@@ -419,6 +430,8 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     
     createEnergyMap ( Nfft, grid2, correl, energy_map) ;
+    
+    writeToMatFile (energy_map, room_length_n, room_width_n, "energy_map.mat");
     
     /*for (int a = 0; a < room_length_n; a++){
         for (int b = 0; b < room_width_n; b++){
