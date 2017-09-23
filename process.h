@@ -36,6 +36,9 @@ class process : public audio_proc
     void set_mics_centroid_position( float x, float y ) ; // (x,y) in meters
     
     int Nsamples;
+    
+    int write_file_variable; // 
+    
     int set_nsamples (int Nsamples);
     float findMaxVal_2D (float ** matrix, int dim1, int dim2);
 
@@ -61,7 +64,8 @@ class process : public audio_proc
     void createEnergyMap ( int Nfft, int *** grid, float ** correl, float ** energy_map);
     void setToZeroImpossibleLocations (float ** energy_map);
     float getAngle ( float x, float y);
-
+    
+    void fft_write (int Nfft, float * signal, float * result_fft_RE, float * result_fft_IM);
 
 
   SNDFILE* infile ;
