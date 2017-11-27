@@ -239,7 +239,7 @@ int calcMaxXcorr (int Nfft, float * spec1_RE, float * spec1_IM, float * spec2_RE
     
     int delay_of_max = findDelay( Nfft, xc) ;
     
-    std::cout << "delay of max: "<< delay_of_max << std::endl;
+    //    std::cout << "delay of max: "<< delay_of_max << std::endl;
 
     return delay_of_max;
     
@@ -416,8 +416,8 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
          */
         
         //std::cout <<"NFFT srp approach 1: "<< Nfft<< std::endl;
-        std::cout <<"Signala for mic No. "<< mic_a << std::endl;
-        std::cout <<"Signalb for mic No. "<< mic_b << std::endl;
+	//        std::cout <<"Signala for mic No. "<< mic_a << std::endl;
+	//        std::cout <<"Signalb for mic No. "<< mic_b << std::endl;
 
         
         obtainXc ( &signals [mic_a][0], &signals [mic_b][0], Nfft, sample_rate, &xc[0] );
@@ -434,7 +434,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
         int maximum_idx;
         maximum_idx = findMaxIdx(&xc[0], Nfft);
         
-        std::cout << "max_idx_xc: "<< maximum_idx << std::endl;
+	//        std::cout << "max_idx_xc: "<< maximum_idx << std::endl;
         
         //int d = findDelay( Nfft, correl[i]) ;
         //std::cout <<"delay from mic " <<mic_a<<" to mic "<<mic_b<<": "<< d<< std::endl;
@@ -924,7 +924,7 @@ float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
     
     // std::cout << "max coordinates (x,y): ("<< max_coordinate_x <<", "<<max_coordinate_y<<")"<< std::endl;
     
-    std::cout << "SRP solution: "<< sol_angle << " degrees"<< std::endl;
+    // std::cout << "SRP solution: "<< sol_angle << " degrees"<< std::endl;
     
     /*
      
