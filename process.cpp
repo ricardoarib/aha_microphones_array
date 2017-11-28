@@ -736,8 +736,8 @@ void process::createEnergyMap ( int Nfft, int *** grid, float ** correl, float *
 					//std::cout << "idx: "<< idx << std::endl;
                 
                 // Fill the grid
-                //energy_map [a][b] = energy_map [a][b] + correl [m][idx];
-            energy_map [a][b] = correl [m][idx];
+                energy_map [a][b] = energy_map [a][b] + correl [m][idx];
+				//energy_map [a][b] = correl [m][idx];
             }
             //std::cout << "energy_map ["<<a<<"]["<<b<<"]: " <<energy_map [a][b]<< std::endl;
             
