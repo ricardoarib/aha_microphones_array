@@ -41,7 +41,8 @@ rb_results( RESULTS_RING_BUFFER_SIZE )
     cell_size = CELL_SIZE;
     room_length_n = (int)(ROOM_LENGTH/cell_size);
     room_width_n = (int)(ROOM_WIDTH/cell_size);
-    
+
+                                                                    
     set_room_dimensions(30, 30, 1); // Length, width, cell size
     set_mics_centroid_position(15.0, 15.0);
     Nsamples = set_nsamples (1024);
@@ -483,7 +484,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     createEnergyMap ( Nfft, grid2, correl, energy_map) ;
     
-    writeToMatFile ( energy_map, room_length_n, room_width_n, "energy_map.mat" );
+    // writeToMatFile ( energy_map, room_length_n, room_width_n, "energy_map.mat" );
     
     /*for (int a = 0; a < room_length_n; a++){
      for (int b = 0; b < room_width_n; b++){
@@ -505,8 +506,14 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
      }
      */
     
-    float peak, angle_srp;
-    //peak = findMaxVal_2D (energy_map, room_length_n, room_width_n);
+    float angle_srp;
+    
+    /*
+    float peak;
+    peak = findMaxVal_2D (energy_map, room_length_n, room_width_n);
+    std::cout << "peak: "<< peak << std::endl;
+    */
+    
     angle_srp = findMaxVal_2D (energy_map, room_length_n, room_width_n);
     
     
@@ -520,8 +527,8 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     results->angle_geo = val_angle ;
     results->angle_srp = angle_srp * PI / 180;
     
-    //std::cout << "This is the angle (callback) =" << results->angle << std::endl;
-    
+    //    std::cout << "This is the angle GEO: " << results->angle_geo*180/PI << std::endl;
+    //    std::cout << "This is the angle SRP: " << results->angle_srp*180/PI << std::endl; 
     
     /*
      
@@ -685,11 +692,11 @@ void process::fill_grid2 ( int Nfft, int *** grid2) {
                 
                 float d_b = sqrt ( ( a * cell_size - mic_b_x ) * ( a * cell_size - mic_b_x ) + ( b * cell_size - mic_b_y ) * ( b * cell_size - mic_b_y ) );
                 
-                /*
+		 /*
                  std::cout << "------------ for cell:" << a<<b<< std::endl ;
                  std::cout << "d_a: "<< d_a << std::endl ;
                  std::cout << "d_b: "<< d_b << std::endl ;
-                 */
+		   */
                 
                 
                 // Calculate the time of arrival
@@ -726,9 +733,11 @@ void process::createEnergyMap ( int Nfft, int *** grid, float ** correl, float *
             for (int m = 0; m < num_mic_pairs; m++){
                 // Get idx
                 idx = grid[m][a][b];
+					//std::cout << "idx: "<< idx << std::endl;
                 
                 // Fill the grid
-                energy_map [a][b] = energy_map [a][b] + correl [m][idx];
+                //energy_map [a][b] = energy_map [a][b] + correl [m][idx];
+            energy_map [a][b] = correl [m][idx];
             }
             //std::cout << "energy_map ["<<a<<"]["<<b<<"]: " <<energy_map [a][b]<< std::endl;
             
@@ -736,6 +745,18 @@ void process::createEnergyMap ( int Nfft, int *** grid, float ** correl, float *
     }
     
     setToZeroImpossibleLocations ( energy_map ); // TODO: melhorar! escolher ponto mais longe ao longo da linha (nao apenas da coluna)
+	
+	/*
+	float max_val;
+	max_val = findMaxVal_2D(energy_map, room_length_n, room_width_n);
+	
+	for (int a = 0; a < room_length_n; a++){
+		for (int b = 0; b < room_width_n; b++){
+			energy_map[a][b] /= max_val;
+		}
+		
+	}
+	*/
 }
 
 void process::setToZeroImpossibleLocations (float ** energy_map){
