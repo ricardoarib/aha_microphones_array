@@ -25,17 +25,17 @@ class process : public audio_proc
 {
  public:
   // mandatory
-  process( std::string filename, int count = -1 ) ;
+  process( std::string filename, int count = -1 , int Nsamples = 1024) ;
   ~process() ;
   void callback( float* buf, int Nch, int Nsamples ) ;
   void set_sample_rate( float val ) ;
   void set_channels( int val ) ;
-  void pre_start() ;
+  void pre_start(int Nsamples) ;
   void post_stop() ;
     void set_room_dimensions(float length, float width, float cell_size) ;
     void set_mics_centroid_position( float x, float y ) ; // (x,y) in meters
     
-    int Nsamples;
+    //int Nsamples;
     
     int write_file_variable; // 
     
@@ -84,9 +84,9 @@ class process : public audio_proc
 
   ringbuffer<void*> rb_results ;
     
-#define ROOM_LENGTH 1
-#define ROOM_WIDTH 1
-#define CELL_SIZE 0.1
+#define ROOM_LENGTH 30
+#define ROOM_WIDTH 30
+#define CELL_SIZE 1
 #define NUM_MIC_PAIRS 4
 #define SOUND_SPEED 343.21
     
@@ -95,7 +95,7 @@ class process : public audio_proc
     float cell_size; // [ m / cell ]
     
     // Criar GRID
-    float grid [NUM_MIC_PAIRS][ (int) (ROOM_LENGTH / CELL_SIZE) ][ (int) (ROOM_WIDTH / CELL_SIZE) ];
+    float grid [NUM_MIC_PAIRS][ (int) (ROOM_LENGTH / CELL_SIZE) ][ (int) (ROOM_WIDTH / CELL_SIZE) ]; // <---------------------------- Poor definition, try to avoid define(s)
     
     int *** grid2; // 3 dimentions
     float c = 343.21;
@@ -105,7 +105,8 @@ class process : public audio_proc
     
     
     // Pseudo inverse
-    float pinv[2][8] = { {2.500000000000000, 1.767766952966369, 0.000000000000000, -1.767766952966368, -2.500000000000000, -1.767766952966369, -0.000000000000000, 1.767766952966368 }, {0.000000000000001, 1.767766952966370, 2.500000000000000, 1.767766952966369, 0.000000000000001, -1.767766952966369, -2.500000000000000, -1.767766952966369 } } ;
+    float pinv[2][8] = { {2.500000000000000, 1.767766952966369, 0.000000000000000, -1.767766952966368, -2.500000000000000, -1.767766952966369, -0.000000000000000, 1.767766952966368 }, 
+						 {0.000000000000001, 1.767766952966370, 2.500000000000000, 1.767766952966369, 0.000000000000001, -1.767766952966369, -2.500000000000000, -1.767766952966369 } } ;
     
     // Mics position
     float mics[8][2] = {

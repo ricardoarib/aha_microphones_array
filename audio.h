@@ -48,7 +48,8 @@ class audio{
   int get_data(float* d, int sz) ;
   unsigned long get_framesPerBuffer(){ return _framesPerBuffer ; } ;
 
-  void set_audio_proc(audio_proc* audiop, int buf_length = 1024 ) ; 
+  // void set_audio_proc(audio_proc* audiop, int buf_length = 1024 ) ; 
+  void set_audio_proc(audio_proc* audiop, int buf_length ) ; 
   void set_samples_per_call( int val ){ samples_per_call = val;  };
 
   

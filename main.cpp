@@ -55,6 +55,7 @@ int main( int argc, char** argv ) {
   std::cout << "sizeof(double)=" << sizeof(double) << std::endl ;
   std::cout << "sizeof(void*)=" << sizeof(void*) << std::endl ;
 
+
   // ------ Parse command line options. ------
 
   std::string device ;
@@ -102,6 +103,7 @@ int main( int argc, char** argv ) {
     help_cmdl( argv ) ;
     return -1 ;
   }
+  std::cout << "Nsamples: "<< Nsamples << std::endl;
 
   if ( device.empty() )
     device = std::string( "STM32" ) ; // other examples: "default"  "HDA"
@@ -129,9 +131,11 @@ int main( int argc, char** argv ) {
   if ( samples_to_process != -1 )
     std::cout << "Will stop after reaching " << samples_to_process << " samples or " << (float)samples_to_process / sample_rate << " seconds." << std::endl ;
 
-  process p( filename, samples_to_process ) ;
+  process p( filename, samples_to_process , Nsamples) ;
   user_interface ui( &p ) ;
 
+std::cout << "Does is get here? samples_to_process: "<< samples_to_process << std::endl;
+std::cout << "Does is get here? Nsamples: "<< Nsamples << std::endl;
 
   a.set_audio_proc( &p, Nsamples ) ;
 

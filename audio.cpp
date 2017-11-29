@@ -360,7 +360,7 @@ void* audio::callback_thread() {
   if (ap) {
     ap->set_sample_rate( sample_rate ) ;
     ap->set_channels( num_channels ) ;
-    ap->pre_start();
+    ap->pre_start( samples_per_call );
   }
 
   float buf[ samples_per_call * num_channels ];

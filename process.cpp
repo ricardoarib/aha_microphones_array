@@ -5,6 +5,7 @@
 #include <math.h>
 #include <iomanip>
 #include <fstream>
+#include "audio_proc.h"
 
 using namespace std;
 
@@ -13,7 +14,7 @@ using namespace std;
 #define FS 48000
 #define max_mics_distance 0.2
 
-process::process( std::string fn, int count ) :
+process::process( std::string fn, int count, int Nsamples ) :
 sample_rate( 1 ),
 channels( 1 ),
 outfilename( fn ),
@@ -38,14 +39,16 @@ rb_results( RESULTS_RING_BUFFER_SIZE )
     pthread_mutex_unlock( &mutex_levels ) ;
     
     num_mic_pairs = NUM_MIC_PAIRS;
+    /*
     cell_size = CELL_SIZE;
     room_length_n = (int)(ROOM_LENGTH/cell_size);
     room_width_n = (int)(ROOM_WIDTH/cell_size);
-
+*/
                                                                     
     set_room_dimensions(30, 30, 1); // Length, width, cell size
     set_mics_centroid_position(15.0, 15.0);
-    Nsamples = set_nsamples (1024);
+    //set_number_of_mics(); TODO: method(!)
+    Nsamples = set_nsamples (1024);    // get Nsamples from main (!)
     
     int write_file_variable = 0;
 };
@@ -594,11 +597,13 @@ void process::set_channels( int val ) { channels = val ; } ;
 
 int process::set_nsamples ( int Nsamples) { return Nsamples ; } ;
 
-void process::pre_start() {
-    std::cout << "process::pre_start()" << std::endl ;
+void process::pre_start(int Nsamples) {
+	std::cout << "process::pre_start()" << std::endl ;
     // inicializar GRID
     //fill_grid();
     open_snd_file();
+    
+    std::cout << "Nsamples is: " << Nsamples<< std::endl ;
     
     // Initialize grid
     //    grid2 = new float ** [num_mic_pairs];

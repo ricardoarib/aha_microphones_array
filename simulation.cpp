@@ -50,6 +50,8 @@ void help_cmdl( char** argv ) {
 int main( int argc, char** argv ) {
 
 
+
+  std::cout << "HELLO WORLD!" << std::endl ;
   // ------ Parse command line options. ------
 
   std::string filename_in ;
@@ -144,8 +146,12 @@ int main( int argc, char** argv ) {
   }
 
   // ------ Prepare all classes. ------
+  
+  int samples_to_process = -1; // (!) What is this?
 
-  process p( filename_out ) ;
+  process p( filename_out, samples_to_process , Nsamples ) ;
+  
+  //process p( filename_out ) ;
   user_interface ui( &p ) ;
 
 
@@ -158,7 +164,11 @@ int main( int argc, char** argv ) {
   // ------ Init  ------
   p.set_sample_rate( info.samplerate ) ;
   p.set_channels( channels ) ;
-  p.pre_start() ;
+    std::cout << "Nsamples in simulation before pre start is:"<< Nsamples << std::endl;
+
+  p.pre_start(Nsamples) ;
+  
+  std::cout << "Reaches and finishes pre_start()" << std::endl;
 
 
   // ------ Loop  ------
@@ -166,7 +176,8 @@ int main( int argc, char** argv ) {
   //int count = 0 ;
   while ( read_count = sf_readf_float(infile,buf,Nsamples)  ) {
     // std::cout << "count = " << count++ << "  read_count = " << read_count << "   Nsamples = " << Nsamples << std::endl ;
-    p.callback( buf, channels, read_count ) ;
+    p.callback( buf, channels, Nsamples ) ;
+    //p.callback( buf, channels, read_count ) ;
     usleep( sleep_time_us ) ;
 
     // check if ui thread is finished.
