@@ -103,7 +103,7 @@ int main( int argc, char** argv ) {
     help_cmdl( argv ) ;
     return -1 ;
   }
-  std::cout << "Nsamples: "<< Nsamples << std::endl;
+  //std::cout << "Nsamples: "<< Nsamples << std::endl;
 
   if ( device.empty() )
     device = std::string( "STM32" ) ; // other examples: "default"  "HDA"
@@ -133,9 +133,6 @@ int main( int argc, char** argv ) {
 
   process p( filename, samples_to_process , Nsamples) ;
   user_interface ui( &p ) ;
-
-std::cout << "Does is get here? samples_to_process: "<< samples_to_process << std::endl;
-std::cout << "Does is get here? Nsamples: "<< Nsamples << std::endl;
 
   a.set_audio_proc( &p, Nsamples ) ;
 

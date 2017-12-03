@@ -35,12 +35,15 @@ class process : public audio_proc
     void set_room_dimensions(float length, float width, float cell_size) ;
     void set_mics_centroid_position( float x, float y ) ; // (x,y) in meters
     
+    int print_variable;
+    int max_idx_x, max_idx_y;
+    
     //int Nsamples;
     
     int write_file_variable; // 
     
     int set_nsamples (int Nsamples);
-    float findMaxVal_2D (float ** matrix, int dim1, int dim2);
+    float findMaxVal_2D (float ** matrix, int dim1, int dim2, int * idx_x, int * idx_y);
 
 
   // optional
@@ -99,6 +102,8 @@ class process : public audio_proc
     
     int *** grid2; // 3 dimentions
     float c = 343.21;
+    
+    float ** grid_2D_tmp;
     
     float ** correl;
     float ** energy_map;

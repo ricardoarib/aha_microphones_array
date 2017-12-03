@@ -51,6 +51,11 @@ rb_results( RESULTS_RING_BUFFER_SIZE )
     Nsamples = set_nsamples (1024);    // get Nsamples from main (!)
     
     int write_file_variable = 0;
+    
+    print_variable = 0;
+    
+    max_idx_x = 0;
+    max_idx_y = 0;
 };
 
 
@@ -486,6 +491,12 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     //std::cout << "write file variable: "<< write_file_variable << std::endl;
     
     createEnergyMap ( Nfft, grid2, correl, energy_map) ;
+
+    //std::cout << "NON-zero: energy_map[][]: " << energy_map[4][1] << std::endl; 
+    
+//    fill_zeros_2d_grid (energy_map, room_length_n, room_width_n) ;
+    
+    //std::cout << "W/- zero: energy_map[][]: " << energy_map[4][1] << std::endl; 
     
     // writeToMatFile ( energy_map, room_length_n, room_width_n, "energy_map.mat" );
     
@@ -509,7 +520,7 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
      }
      */
     
-    float angle_srp;
+    float val_maximum, angle_srp;
     
     /*
     float peak;
@@ -517,21 +528,65 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     std::cout << "peak: "<< peak << std::endl;
     */
     
-    angle_srp = findMaxVal_2D (energy_map, room_length_n, room_width_n);
-    
+    val_maximum = findMaxVal_2D (energy_map, room_length_n, room_width_n, &max_idx_x, &max_idx_y);
+    angle_srp = getAngle(max_idx_x, max_idx_y);
+ 
+ //to erase
+	if (print_variable  == -1 ){
+		for (int i = 0; i < room_length_n; i++){
+			for (int j = 0; j < room_width_n; j++){
+				std::cout << "energy_map["<<i<<"]["<<j<<"] = " << energy_map[i][j] << std::endl;
+			}
+		}
+		
+	std::cout << "Max encontrado["<<max_idx_x<<"]["<<max_idx_y<<"] =" << val_maximum << std::endl;
+	std::cout << "Angle SRP: " << angle_srp << std::endl;
+ 
+	}; print_variable++;
+
+   // fill_zeros_2d_grid(grid_2D_tmp, 6, 5);
+   // grid_2D_tmp[0][0] = 8;
+    /*
+    grid_2D_tmp = {	
+						{8,0,0,0,0},
+						{0,0,0,0,0},
+						{0,0,0,0,0},
+						{0,0,0,0,0},
+						{0,0,0,0,0}
+					};
+	*/
+	/*
+	float max_encontrado = 0;
+	
+	for (int i = 0; i < 6; i++){
+		for (int j = 0; j < 5; j++){
+			std::cout << "grid_2D_tmp["<<i<<"]["<<j<<"] = " << grid_2D_tmp[i][j] << std::endl;
+		}
+	}
+	*/
+	
+//	max_encontrado = findMaxVal_2D (grid_2D_tmp, 6, 5);
+//	max_encontrado = findMaxVal_2D (M, 5, 6);
+//	max_encontrado = findMaxVal_2D (M, 6, 7);
+//	max_encontrado = findMaxVal_2D (M, 7, 6);
+  
+	
+//	std::cout << "Max encontrado =" <<max_encontrado<< std::endl;
     
     //+++++++++++++++++++
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     
     
-    //std::cout << "This is the angle =" <<val_angle<< std::endl;
-    
+    //std::cout << "This is the angle =" <<angle_srp<< std::endl;
     
     results->angle_geo = val_angle ;
     results->angle_srp = angle_srp * PI / 180;
     
-    //    std::cout << "This is the angle GEO: " << results->angle_geo*180/PI << std::endl;
-    //    std::cout << "This is the angle SRP: " << results->angle_srp*180/PI << std::endl; 
+        std::cout << "This is the angle GEO: " << results->angle_geo*180/PI << std::endl;
+        std::cout << "This is the angle SRP: " << results->angle_srp*180/PI << std::endl; 
+    
+    
+    fill_zeros_2d_grid(energy_map, room_length_n, room_width_n);
     
     /*
      
@@ -603,7 +658,7 @@ void process::pre_start(int Nsamples) {
     //fill_grid();
     open_snd_file();
     
-    std::cout << "Nsamples is: " << Nsamples<< std::endl ;
+    //std::cout << "Nsamples is: " << Nsamples<< std::endl ;
     
     // Initialize grid
     //    grid2 = new float ** [num_mic_pairs];
@@ -622,6 +677,10 @@ void process::pre_start(int Nsamples) {
         }
     }
     
+    grid_2D_tmp = new float * [6];
+    for (int m = 0; m < 6; m++){
+        grid_2D_tmp[m] = new float [5];
+    }
     
     correl = new float * [num_mic_pairs];
     for (int i = 0; i < num_mic_pairs; i++){
@@ -640,6 +699,7 @@ void process::pre_start(int Nsamples) {
     fill_grid2 ( Nsamples, grid2 );
     
     write_file_variable = 0;
+    
 } ;
 
 void process::fill_grid (){
@@ -737,11 +797,13 @@ void process::createEnergyMap ( int Nfft, int *** grid, float ** correl, float *
         for (int b = 0; b < room_width_n; b++){
             for (int m = 0; m < num_mic_pairs; m++){
                 // Get idx
-                idx = grid[m][a][b];
-					//std::cout << "idx: "<< idx << std::endl;
+                idx = grid2[m][a][b];
+				
+				//std::cout << "idx: "<< idx << std::endl;
                 
                 // Fill the grid
                 energy_map [a][b] = energy_map [a][b] + correl [m][idx];
+                //energy_map [a][b] += correl [m][idx];
 				//energy_map [a][b] = correl [m][idx];
             }
             //std::cout << "energy_map ["<<a<<"]["<<b<<"]: " <<energy_map [a][b]<< std::endl;
@@ -798,6 +860,13 @@ void process::post_stop() {
     }
     delete [] grid2;
     
+    
+    // Start new
+    for (int m = 0; m < 6; m++){
+        delete [] grid_2D_tmp[m];
+    }
+    delete [] grid_2D_tmp;
+    // End new
     
     //delete correl
     for (int i = 0; i < num_mic_pairs; i++){
@@ -872,6 +941,37 @@ void process::send_results( processed_data* d ){
     
 };
 
+float process::findMaxVal_2D (float ** matrix, int dim1, int dim2, int *idx_x, int *idx_y){
+	float tmp, max;
+	float dist_tmp, dist_max;
+	
+	tmp = 0;
+	max = 0;
+	dist_tmp = 0;
+	dist_max = 0;
+	
+	for (int i = 0; i < dim1; i++){
+		for (int j = 0; j < dim2; j++){
+			tmp = matrix[i][j];
+			
+			dist_tmp = calcDistanceBetweenPoint((float)i, (float)j, (float)centroid_x, (float)centroid_y);
+			dist_max = calcDistanceBetweenPoint((float)*idx_x, (float)*idx_y, (float)centroid_x, (float)centroid_y);
+			if (tmp > max){ 
+				max = tmp;
+				*idx_x = i;
+				*idx_y = j;
+			}
+			else if (tmp == max && dist_tmp > dist_max) { 
+				max = tmp;
+				*idx_x = i;
+				*idx_y = j;
+			}
+		}
+	}
+	return max;
+} 
+
+/*
 float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
     
     int max_idx;
@@ -943,7 +1043,7 @@ float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
      matrix[i][j] = matrix[i][j] / max_val;
      }
      }
-     */
+     
     
     float sol_angle = 0.0;
     sol_angle = getAngle (max_coordinate_x, max_coordinate_y);
@@ -952,8 +1052,8 @@ float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
     
     // std::cout << "SRP solution: "<< sol_angle << " degrees"<< std::endl;
     
-    /*
-     
+    
+     // ---- commented str
      if(1){ //(max_val>5){
      //std::cout << "max_val inside loop: "<< max_val << std::endl;
      std::cout << "max coordinates (x,y): ("<< max_coordinate_x <<", "<<max_coordinate_y<<")"<< std::endl;
@@ -962,13 +1062,15 @@ float process::findMaxVal_2D (float ** matrix, int dim1, int dim2){ // Matrix
      std::cout << "max_val is small: "<< max_val<< std::endl;
      }
      
-     */
+     // ---- commented end
     
     return sol_angle;
     
     //TODO: juntar condicao para que o valor do máximo escolhido seja o mais afastado
     
 };
+
+*/
 
 float process::getAngle ( float x, float y){
     

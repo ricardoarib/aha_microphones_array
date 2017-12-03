@@ -164,11 +164,11 @@ int main( int argc, char** argv ) {
   // ------ Init  ------
   p.set_sample_rate( info.samplerate ) ;
   p.set_channels( channels ) ;
-    std::cout << "Nsamples in simulation before pre start is:"<< Nsamples << std::endl;
+//    std::cout << "Nsamples in simulation before pre start is:"<< Nsamples << std::endl;
 
   p.pre_start(Nsamples) ;
   
-  std::cout << "Reaches and finishes pre_start()" << std::endl;
+//  std::cout << "Reaches and finishes pre_start()" << std::endl;
 
 
   // ------ Loop  ------
