@@ -11,6 +11,13 @@ include_directories(${PORTAUDIO_INCLUDE_DIRS})
 find_package (LibSndFile)
 include_directories(${LIBSNDFILE_INCLUDE_DIRS})
 
+
+find_package(Eigen3 REQUIRED)
+include_directories(EIGEN3_INCLUDE_DIR)
+find_package(FFTW REQUIRED)
+include_directories(FFTW_INCLUDE_DIR)
+
+
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
