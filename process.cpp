@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <fstream>
 #include "audio_proc.h"
+#include "VAD.h"
 
 using namespace std;
 
@@ -45,8 +46,8 @@ rb_results( RESULTS_RING_BUFFER_SIZE )
     room_width_n = (int)(ROOM_WIDTH/cell_size);
 */
                                                                     
-    set_room_dimensions(30, 30, 1); // Length, width, cell size
-    set_mics_centroid_position(15.0, 15.0);
+    set_room_dimensions(3, 3, 0.01); // Length, width, cell size
+    set_mics_centroid_position(1.50, 1.50);
     //set_number_of_mics(); TODO: method(!)
     Nsamples = set_nsamples (1024);    // get Nsamples from main (!)
     
@@ -582,8 +583,8 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     results->angle_geo = val_angle ;
     results->angle_srp = angle_srp * PI / 180;
     
-        std::cout << "This is the angle GEO: " << results->angle_geo*180/PI << std::endl;
-        std::cout << "This is the angle SRP: " << results->angle_srp*180/PI << std::endl; 
+//        std::cout << "This is the angle GEO: " << results->angle_geo*180/PI << std::endl;
+//        std::cout << "This is the angle SRP: " << results->angle_srp*180/PI << std::endl; 
     
     
     fill_zeros_2d_grid(energy_map, room_length_n, room_width_n);
@@ -631,6 +632,17 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
      results->Nspec = Nfft/16 ;
      free(cfg);
      */
+    
+    
+    // --- VAD begin
+    
+	const int WinSize = 256;
+	const int order = 5;
+	const double threshold = -6;
+	
+	VAD vad(WinSize, Nsamples, order, threshold);
+    
+    // --- VAD end
     
     
     // ------ Send the results ------
