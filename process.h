@@ -8,6 +8,9 @@
 #include <string>
 #include <pthread.h>
 
+#include <iostream>
+#include <fstream>
+using namespace std;
 
 struct processed_data {
   float angle_geo, angle_srp ;
@@ -86,6 +89,8 @@ class process : public audio_proc
   bool processing_finished ;
 
   ringbuffer<void*> rb_results ;
+  
+  ofstream vad_file;
     
 #define ROOM_LENGTH 30
 #define ROOM_WIDTH 30
@@ -128,6 +133,10 @@ class process : public audio_proc
     
     // Mic pairs
     int pairs[4][2]= {{0,4}, {1,5}, {2,6}, {3,7}};
+
+	// Temp txt output_files
+    ofstream results_file_geo;
+    ofstream results_file_srp;
 
 };
 

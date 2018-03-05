@@ -6,7 +6,11 @@
 #include <iomanip>
 #include <fstream>
 #include "audio_proc.h"
+#include "ascii_meters.h"
+
 #include "VAD.h"
+#include <string>       // std::string
+#include <sstream>
 
 using namespace std;
 
@@ -14,6 +18,8 @@ using namespace std;
 #define PI 3.14159265358979
 #define FS 48000
 #define max_mics_distance 0.2
+#define MAX_DB 0.0f
+#define MIN_DB -50.0f
 
 process::process( std::string fn, int count, int Nsamples ) :
 sample_rate( 1 ),
@@ -65,6 +71,102 @@ process::~process(){
 };
 
 /* ****************************** Functions ************************************************************************************ */
+
+/*
+void voice_activity_detection(){
+	
+	const int fs = 11025;
+	const int WinSize = 256;
+	const int order = 5;
+	const double threshold = -6;
+	const int uSize = 4;
+
+	//ifstream soundFile("/home/vera/work/aha_microphones_array/build/vad_file.txt");
+	ifstream soundFile("/home/vera/work/VAD/Voice-Activity-Detection/sound.txt");
+
+	vector<double> sound;
+
+	if(soundFile.is_open()){
+		double value;
+		while(soundFile >> value){
+			sound.push_back(value);
+			if(sound.size() == 50176)
+				break;
+		}
+		soundFile.close();
+	}
+
+	double* signal = &sound[0];
+
+	VAD vad(WinSize,sound.size(),order,threshold);
+	vector<double> outcome = vad.compute(signal);
+	MatrixXd enFrame = vad.getNormalizedEnFrame();
+
+	double maxLevel = 0;
+	for(int i = 0; i < sound.size(); i++){
+		if(maxLevel < abs(sound[i]))
+			maxLevel = abs(sound[i]);
+	}
+
+	maxLevel += 0.01*maxLevel;
+	vector<int> idx(outcome.size(),0);
+	for(int i = 0; i < outcome.size(); i++){
+		idx[i] = (outcome[i] > 2.5) ? 1 : 0;
+	}
+
+	VectorXd d = VectorXd::Zero(idx.size()-1);
+	VectorXd vadStart, vadEnd;
+
+	for(int i = 0; i < outcome.size()-1; i++){
+		d(i) = idx[i+1] - idx[i];
+		if(d(i) == 1){
+			vadStart.conservativeResize(vadStart.size()+1);
+			vadStart(vadStart.size()-1) = i;
+		}
+		else if (d(i) == -1){ 
+			vadEnd.conservativeResize(vadEnd.size()+1);
+			vadEnd(vadEnd.size()-1) = i;
+		}
+	}
+
+	double q = (double) WinSize/fs;
+	VectorXd temp = vadEnd - vadStart;
+	VectorXd len = temp*q;
+	vector<int> VAD_begin, VAD_end;
+	for(int i = 0; i < len.size(); i++){
+		if(len(i) >= (uSize*WinSize/fs)){
+			VAD_begin.push_back(vadStart(i));
+			VAD_end.push_back(vadEnd(i));
+		}
+		std::cout << "VAD_begin("<<i<<"):" << VAD_begin[i] << std::endl;
+		std::cout << "VAD_end("<<i<<"):" << VAD_end[i] << std::endl;
+	}
+	*/
+	/*
+	//plot sound wave here 
+	cout << enFrame.row(0) << endl;
+	for(int i = 0; i < VAD_begin.size(); i++){
+		double x_start = enFrame(0,VAD_begin[i]+1) + 0.5*order*WinSize;
+		double x_end = enFrame(enFrame.rows()-1,VAD_end[i]+1) + 0.5*order*WinSize;
+		// VectorXd x, y;
+		// x << x_start, x_end, x_end, x_start, x_start;
+		// y << maxLevel, maxLevel, -maxLevel, -maxLevel, maxLevel;
+
+		stringstream ss;
+    		ss << "example_" << i << ".txt";
+    		ofstream myfile;
+    		cout << ss.str();
+		myfile.open (ss.str());
+		myfile << x_start << "\t\t\t" << maxLevel << "\n";
+		myfile << x_end << "\t\t\t" << maxLevel << "\n";
+		myfile << x_end << "\t\t\t" << -maxLevel << "\n";
+		myfile << x_start << "\t\t\t" << -maxLevel << "\n";
+		myfile << x_start << "\t\t\t" << maxLevel << "\n";
+		myfile.close();
+	}*/
+	//return 0;
+//}
+
 
 void writeToMatFile ( float ** map, int dim1, int dim2, char * fn ){
     std::ofstream myfile;
@@ -137,7 +239,7 @@ int findMaxIdxArray (float * signal, int signal_length){
     
     for (int i = 0; i < signal_length; i++){
         
-        if (signal[max_idx] < signal[i]){
+        if ( sqrt(signal[max_idx]*signal[max_idx]) < sqrt(signal[i]*signal[i]) ){
             max_idx = i;
         }
         else if ( (signal[max_idx] == signal[i]) ) {
@@ -335,6 +437,19 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
         }
     }
     
+    // Calc maximum captured by every channel
+    int max_idx = 0;
+    float mean_sig_maxs = 0;
+    for (int channel = 0; channel < number_mics; channel++){
+		max_idx = findMaxIdxArray(&signals[channel][0], Nsamples);
+		//std::cout << "Maximum of signal in channel "<<channel<< " is: " <<signals[channel][max_idx]<< std::endl;
+		//std::cout << "Maximum in dB "<<channel<< " is: " <<20*log10(signals[channel][max_idx])<< std::endl;
+		mean_sig_maxs += signals[channel][max_idx];
+	}
+	mean_sig_maxs = mean_sig_maxs / number_mics;
+    //std::cout << "MEAN is: " << mean_sig_maxs << std::endl;
+    //std::cout << "MEAN in dB is: " << 20*log10(mean_sig_maxs) << std::endl;
+    
     // Delay calculation
     int ref_channel = 0;
     int delays [number_mics]; //indices!
@@ -348,13 +463,28 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     }
     med_delay = med_delay / Nch;
     
+    /*
+    // Write file txt for Voice Activity Detection (VAD)
+    vad_file.open ("vad_file.txt");
+	for ( int i = 0;  i < Nsamples; i++ ) {
+		vad_file << signals[ref_channel][0] << "\n";
+	} 
+	vad_file.close();
+	
+	// Voice Activity Detection
+	voice_activity_detection();
+    
+    */
     
     // Send spec information
     float result_fft_RE[Nfft], result_fft_IM[Nfft];
     fft(Nfft, &signals[ref_channel][0], &result_fft_RE[0], &result_fft_IM[0]);
     for (int i = 0; i< Nfft/16/8; i++){
         results->spec[i] = sqrt( result_fft_RE[i] * result_fft_RE[i] + result_fft_IM[i] * result_fft_IM[i] ) ;
+                 //std::cout << "results->spec["<< i<<"]:" <<results->spec[i]<< std::endl;
+
         results->spec[i] *= 1.0 / (float)Nfft ;
+				//std::cout << "results->spec["<< i<<"] *= 1.0 / (float)Nfft :" <<results->spec[i]<< std::endl;
     }
     results->Nspec = Nfft/16/8;
     
@@ -583,6 +713,29 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     results->angle_geo = val_angle ;
     results->angle_srp = angle_srp * PI / 180;
     
+    
+    float mean_spec = 0;
+    
+    for (int i=0; i<results->Nspec; i++){
+		//std::cout << "Results->spec[" << i << "]: " << results->spec[i] << std::endl;
+		mean_spec =+ results->spec[i];
+        // print_vertical_bar_dB( results->spec[i] ) ;
+    }
+
+      
+      mean_spec = mean_spec / results->Nspec;
+      float mean_spec_dB = 0;
+      mean_spec_dB = 20*log10(mean_spec);
+      
+      //mean_spec = val_to_dB_fraction( mean_spec ); 
+      
+      //std::cout << "mean spec:" << mean_spec << std::endl;
+		
+	// Write the output of the program in a file
+    results_file_geo << results->angle_geo*180/PI <<" "<< mean_sig_maxs << " "<< 20 * log10(mean_sig_maxs) << "\n";
+    results_file_srp << results->angle_srp*180/PI <<" "<< mean_sig_maxs << " "<< 20 * log10(mean_sig_maxs) << "\n";
+    
+        
 //        std::cout << "This is the angle GEO: " << results->angle_geo*180/PI << std::endl;
 //        std::cout << "This is the angle SRP: " << results->angle_srp*180/PI << std::endl; 
     
@@ -669,6 +822,9 @@ void process::pre_start(int Nsamples) {
     // inicializar GRID
     //fill_grid();
     open_snd_file();
+    
+    results_file_geo.open ("geo_results_output.txt");
+    results_file_srp.open ("srp_results_output.txt");
     
     //std::cout << "Nsamples is: " << Nsamples<< std::endl ;
     
@@ -863,6 +1019,10 @@ void process::set_mics_centroid_position (float x, float y){
 void process::post_stop() {
     std::cout << "process::post_stop()" << std::endl ;
     close_snd_file();
+    
+    results_file_geo.close();
+    results_file_srp.close();
+    
     //delete [] grid2; // detele com parentesis rectos por se tratar de um array (e nao de uma variavel)
     for (int m = 0; m < num_mic_pairs; m++){
         for (int n = 0; n < room_length_n; n++){
