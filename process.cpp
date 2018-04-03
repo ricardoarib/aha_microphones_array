@@ -238,15 +238,17 @@ int findMaxIdxArray (float * signal, int signal_length){
     int max_idx = 0;
     
     for (int i = 0; i < signal_length; i++){
-        
+        //std::cout << "signal["<<i<<"]: "<<signal[i]<< std::endl;
         if ( sqrt(signal[max_idx]*signal[max_idx]) < sqrt(signal[i]*signal[i]) ){
             max_idx = i;
         }
         else if ( (signal[max_idx] == signal[i]) ) {
-            //  std::cout << "WE ARE EQUAL!"<< std::endl;
+			//return -1;
+             // std::cout << "WE ARE EQUAL!"<< std::endl;
         }
         
     }
+    //std::cout << "returned max_idx of signal:"<<max_idx<< std::endl;
     return max_idx;
 }
 
@@ -433,18 +435,25 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
         //std::cout << "Signal #"<<channel<< std::endl;
         for (int i = 0; i < Nsamples; i++){
             signals [channel][i] = buf [channel + i*Nch];
-            //std::cout << signals[channel][i] << std::endl;
+            //std::cout <<"signal["<< channel<<"]["<<i<<"]: "<< signals[channel][i] << std::endl;
         }
     }
     
     // Calc maximum captured by every channel
     int max_idx = 0;
-    float mean_sig_maxs = 0;
+    float max_sig = 0.0;
+    float mean_sig_maxs = 0.0;
     for (int channel = 0; channel < number_mics; channel++){
 		max_idx = findMaxIdxArray(&signals[channel][0], Nsamples);
-		//std::cout << "Maximum of signal in channel "<<channel<< " is: " <<signals[channel][max_idx]<< std::endl;
+		//std::cout << "Max idx: "<< max_idx << std::endl;
+		//std::cout << "Maximum of signal in channel "<<channel<< " is (1): " <<(float)signals[channel][max_idx]<< std::endl;
+		
+		max_sig = sqrt( signals[channel][max_idx] * signals[channel][max_idx] );
+		//std::cout << "Maximum of signal in channel "<<channel<< " is (2): " <<max_sig<< std::endl;
+		
 		//std::cout << "Maximum in dB "<<channel<< " is: " <<20*log10(signals[channel][max_idx])<< std::endl;
-		mean_sig_maxs += signals[channel][max_idx];
+		//mean_sig_maxs += signals[channel][max_idx];
+		mean_sig_maxs += max_sig;
 	}
 	mean_sig_maxs = mean_sig_maxs / number_mics;
     //std::cout << "MEAN is: " << mean_sig_maxs << std::endl;
@@ -511,6 +520,9 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     // Normalize resulting vector
     float norm_v = sqrt( v[0] * v[0] + v[1] * v[1] );
+    
+    //std::cout << "\n v = ( " << v[0] << ", " << v[1] << " )" << std::endl ;
+    
     if (norm_v == 0) norm_v = 0.000000000000000000001;
     v[0] /= norm_v;
     v[1] /= norm_v;
@@ -525,9 +537,17 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     
     if (v[0] >= 0){ // the vector v is already normalized
         val_angle = asin(v[1]);
+		//std::cout << "111111111111111111111 ) used method: val_angle = asin(v[1]). v[1] ="<<v[1] << std::endl;
+		
     }else{
-        if (v[1] >= 0) val_angle = PI - asin(v[1]);
-        else val_angle = -PI - asin(v[1]);
+        if (v[1] >= 0){
+			val_angle = PI - asin(v[1]);
+			//std::cout << "2222222222222222222) used method: val_angle = PI - asin(v[1]). v[1] ="<<v[1] << std::endl;
+		}
+        else {
+			val_angle = -PI - asin(v[1]);
+			//std::cout << "3333333333333333333) used method: val_angle = -PI - asin(v[1]). v[1] ="<<v[1] << std::endl;
+		}
     }
     
     
@@ -735,9 +755,22 @@ void process::callback( float* buf, int Nch, int Nsamples ) {
     results_file_geo << results->angle_geo*180/PI <<" "<< mean_sig_maxs << " "<< 20 * log10(mean_sig_maxs) << "\n";
     results_file_srp << results->angle_srp*180/PI <<" "<< mean_sig_maxs << " "<< 20 * log10(mean_sig_maxs) << "\n";
     
+        /*
+        if (results->angle_geo*180/PI == 0){
+			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Angle GEO = 0 " << results->angle_geo*180/PI << std::endl;
+			for (int i = 0; i < number_mics; i++){
+				std:: cout << "delays["<<i<<"]: "<< delays[i] << std::endl;
+			}
+		}
+		
+		if (results->angle_srp*180/PI == 0){
+			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Angle SRP = 0 " << results->angle_srp*180/PI << std::endl;
+		}
+		
+        */
         
-//        std::cout << "This is the angle GEO: " << results->angle_geo*180/PI << std::endl;
-//        std::cout << "This is the angle SRP: " << results->angle_srp*180/PI << std::endl; 
+        //std::cout << "This is the angle GEO: " << results->angle_geo*180/PI << std::endl;
+        //std::cout << "This is the angle SRP: " << results->angle_srp*180/PI << std::endl; 
     
     
     fill_zeros_2d_grid(energy_map, room_length_n, room_width_n);
