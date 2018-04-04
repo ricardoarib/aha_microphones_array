@@ -1,0 +1,14 @@
+%% Error variation with parameters
+
+Nwindow = [];
+speaker = [];
+position = [];
+method = [];
+gender = [];
+age = [];
+subset = 'T';
+
+myFiles_seb = selectData('seb', Nwindow, speaker, position, method, method, 0, gender, age, subset);
+myFiles_jfmp = selectData('jfmp', Nwindow, speaker, position, method, method, 0, gender, age, subset);
+
+myFiles = [ myFiles_seb; myFiles_jfmp ];

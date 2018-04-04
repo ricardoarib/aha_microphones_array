@@ -1,0 +1,5 @@
+
+
+ln -s /home/vera/work/mics_array_recordings/data/results
+
+
