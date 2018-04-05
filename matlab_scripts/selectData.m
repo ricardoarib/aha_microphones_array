@@ -39,11 +39,13 @@ for i = 1:num_files
     my_structure(i) = createFileStructure ( myFiles(i) );
 end
 
+safe_empty = @(x)~isempty(x)&&x ;  %% Anonymous Function to convert an empty x to false. If not empty then returns x.
+
 j = 1;
 for i = 1:num_files
-    pass_gender = isempty(gender) || (gender == my_structure(i).gender) ;
-    pass_age = isempty(age) || (age == my_structure(i).age) ;
-    pass_subset = isempty(subset) || (subset == my_structure(i).subset) ;
+    pass_gender = isempty(gender) || safe_empty(gender == my_structure(i).gender) ;
+    pass_age = isempty(age) || safe_empty(age == my_structure(i).age) ;
+    pass_subset = isempty(subset) || safe_empty(subset == my_structure(i).subset) ;
     pass = (pass_gender && pass_age) && pass_subset;
     if pass
         myNewFiles(j) = myFiles(i);
