@@ -29,7 +29,8 @@ for n = 1:length(N)
             if ~isempty(filtered_angles)
                 ang = mean( filtered_angles ) ;
             else
-                ang = 0 ;
+                %ang = 0 ;
+                ang = nan ;
             end
 %             err_acc( m, n ) = err_acc( m, n ) + abs(ang - true_ang) ;
             err_acc( m, n ) = err_acc( m, n ) + ang ;
