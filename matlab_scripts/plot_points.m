@@ -1,4 +1,8 @@
-load('points.mat');
+%load('points.mat');
+load('points_seb_geo_tunning.mat');
+%load('points_seb_srp_tunning.mat');
+%load('points_jfmp_geo_tunning.mat');
+%load('points_jfmp_srp_tunning.mat');
 
 %N = [ 256 512 1024 2048 4096 8192 16384 32768 ];
 %position_vec = [ 0 160 -135 -70 ];

@@ -16,6 +16,9 @@ true_ang_cell = cell(length(th), length(N));
 for n = 1:length(N)
     n
     myFile = selectData('seb', N(n),[], [], [], 'geo', 0, [],[],'T');
+%    myFile = selectData('seb', N(n),[], [], [], 'srp', 0, [],[],'T');
+%    myFile = selectData('jfmp', N(n),[], [], [], 'geo', 0, [],[],'T');
+%    myFile = selectData('jfmp', N(n),[], [], [], 'srp', 0, [],[],'T');
 %     myFile = selectData([], [],[], [3], [], 'geo', 1, [],[],[]); %% test signals
     for o = 1:length(myFile)
         o
