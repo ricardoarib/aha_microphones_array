@@ -49,6 +49,12 @@ cell2counts = @(C)row( cellfun(@(x)sum(~isnan(x)),C) ); % function to count vali
 cellid2col = @(C)col( cell2mat( arrayfun(@(I)I*ones(numel(C{I}),1),col(1:numel(C)),'uni',0) ) );
 cellid2row = @(C)row( cell2mat( arrayfun(@(I)I*ones(numel(C{I}),1),col(1:numel(C)),'uni',0) ) );
 
+selectbyid = @(M,Mid,id) M( find( Mid == id ) ) ;
+medianrow  = @(M,Mid) row( arrayfun( @(x)median( selectbyid(M,Mid,x), 'omitnan' ) , unique(Mid) ) ) ;
+meanrow    = @(M,Mid) row( arrayfun( @(x)  mean( selectbyid(M,Mid,x), 'omitnan' ) , unique(Mid) ) ) ;
+varrow     = @(M,Mid) row( arrayfun( @(x)   var( selectbyid(M,Mid,x), 'omitnan' ) , unique(Mid) ) ) ;
+
+
 plot2=@(C,varargin)plot( cellid2col(C), cell2col(C), varargin{:} );
 plot3=@(C,X,varargin)plot( X(cellid2col(C)), cell2col(C), varargin{:} );
 boxplot2=@(C,varargin)boxplot( cell2row(C), cellid2row(C) , varargin{:} );
@@ -63,6 +69,9 @@ err = err + 360 * (err <= -180) ;
 err = err - 360 * (err > 180) ;
 ids         = cellid2col( ang_cell(m,:) );
 x = N(ids) ;
+err_medians = medianrow(err,ids) ;
+err_means   =   meanrow(err,ids) ;
+err_var     =    varrow(err,ids) ;
 
 subplot(5,2,3)
 %plot(x,angles,'o')
@@ -88,6 +97,17 @@ ylabel('angle error (estimated-true) [degrees]')
 title(sprintf('threshold = %d dBFS \n Box widths are proportional to sample size.',th(m)))
 set(gca,'ytick',[-180 -90 0 90 180])
 
+subplot(5,2,5)
+plot( N', [err_medians' err_means' err_var'/1000], '*-' )
+grid on
+set(gca,'xscale','log')
+set(gca,'xtick',N, 'XMinorTick','off','XMinorGrid','off')
+set(gca,'xlim',[min(N) max(N)])
+xlabel('window size (N) [samples]')
+ylabel('angle error medians/mean/var [degrees]')
+title(sprintf('threshold = %d dBFS',th(m)))
+legend('median','mean','variance/1000')
+
 subplot(5,2,6)
 plot( N, counts/max(counts)*100, '*-' )
 grid on
@@ -107,6 +127,9 @@ err = err + 360 * (err <= -180) ;
 err = err - 360 * (err > 180) ;
 ids         = cellid2col( ang_cell(:,n) );
 x = th(ids) ;
+err_medians = medianrow(err,ids) ;
+err_means   =   meanrow(err,ids) ;
+err_var     =    varrow(err,ids) ;
 
 
 % available_angles = unique(true_angles);
@@ -141,6 +164,15 @@ xlabel('threshold [dBFS]')
 ylabel('angle error (estimated-true) [degrees]')
 title(sprintf('window size = %d samples \n Box widths are proportional to sample size.',N(n)))
 set(gca,'ytick',[-180 -90 0 90 180])
+
+subplot(5,2,9)
+plot(th,err_medians,'*-')
+plot( th', [err_medians' err_means' err_var'/1000], '*-' )
+grid on
+xlabel('threshold [dBFS]')
+ylabel('angle error medians/means/var [degrees]')
+title(sprintf('window size = %d samples',N(n)))
+legend('median','mean','variance/1000')
 
 subplot(5,2,10)
 plot(th,counts/max(counts)*100,'*-')
