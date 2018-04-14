@@ -1,8 +1,24 @@
 %load('points.mat');
-load('points_seb_geo_tunning.mat');
+%load('points_seb_geo_tunning.mat');
+%load('points_seb_geo_validation.mat');
 %load('points_seb_srp_tunning.mat');
+%load('points_seb_srp_validation.mat');
 %load('points_jfmp_geo_tunning.mat');
+%load('points_jfmp_geo_validation.mat');
 %load('points_jfmp_srp_tunning.mat');
+%load('points_jfmp_srp_validation.mat');
+
+load('points_seb_geo_TV.mat');
+%load('points_seb_srp_TV.mat');
+%load('points_jfmp_geo_TV.mat');
+%load('points_jfmp_srp_TV.mat');
+
+%load('points_all_geo_T.mat');
+%load('points_all_srp_T.mat');
+%load('points_all_geo_V.mat');
+%load('points_all_srp_V.mat');
+
+
 
 %N = [ 256 512 1024 2048 4096 8192 16384 32768 ];
 %position_vec = [ 0 160 -135 -70 ];
