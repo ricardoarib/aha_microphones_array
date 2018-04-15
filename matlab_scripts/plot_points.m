@@ -212,3 +212,67 @@ xlabel('threshold [dBFS]')
 ylabel('phrases detected [%]')
 title(sprintf('window size = %d samples',N(n)))
 
+
+
+angles      = cell2col(   ang_cell );
+true_angles = cell2col(   true_ang_cell );
+counts      = cell2counts(   ang_cell );
+err = angles - true_angles ;
+err = err + 360 * (err <= -180) ;
+err = err - 360 * (err > 180) ;
+idsN         = cellid2col( ang_cell(1,:) );
+idsth        = cellid2col( ang_cell(:,1) );
+x = N(idsN) ;
+y = th(idsth) ;
+
+err_medians_3d = [] ;
+err_means_3d   = [] ;
+err_var_3d     = [] ;
+err_std_3d     = [] ;
+for n=1:length(N)
+    ids_3d         = cellid2col( ang_cell(:,n) );
+    err_medians_3d = [ err_medians_3d ; medianrow(err,ids) ] ;
+    err_means_3d   = [ err_means_3d ; meanrow(err,ids) ] ;
+    err_var_3d     = [ err_var_3d ; varrow(err,ids) ] ;
+    err_std_3d     = [ err_std_3d ; stdrow(err,ids) ] ;
+end
+
+figure(2)
+
+subplot(2,1,1)
+[thth,NN] = meshgrid(th,N);
+%plot3(x,y,err_medians,'*')
+%plot3(NN,thth,err_medians,'*')
+surf(NN,thth,err_medians_3d,err_medians_3d)
+% surf(xx, yy, err_mtx)
+% surf(xx, yy, xx)
+grid on
+xlabel('N')
+ylabel('th')
+zlabel('error median')
+%grid on
+%xlabel('threshold [dBFS]')
+%ylabel('phrases detected [%]')
+%title(sprintf('window size = %d samples',N(n)))
+set(gca,'xscale','log')
+set(gca,'xtick',N, 'XMinorTick','off','XMinorGrid','off')
+
+
+subplot(2,1,2)
+[thth,NN] = meshgrid(th,N);
+%plot3(x,y,err_medians,'*')
+%plot3(NN,thth,err_medians,'*')
+surf(NN,thth,err_std_3d,err_std_3d)
+% surf(xx, yy, err_mtx)
+% surf(xx, yy, xx)
+grid on
+xlabel('N')
+ylabel('th')
+zlabel('error std')
+%grid on
+%xlabel('threshold [dBFS]')
+%ylabel('phrases detected [%]')
+%title(sprintf('window size = %d samples',N(n)))
+set(gca,'xscale','log')
+set(gca,'xtick',N, 'XMinorTick','off','XMinorGrid','off')
+
